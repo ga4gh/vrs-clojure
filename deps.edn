@@ -1,0 +1,12 @@
+{:paths ["src"]
+ :mvn/repos
+ {"bintray"
+  {:url "http://jcenter.bintray.com"}
+  "central"
+  {:url "https://repo1.maven.org/maven2/"}
+  "clojars"
+  {:url "https://repo.clojars.org/"}}
+ :deps
+ {org.clojure/clojure {:mvn/version "1.11.1"}
+  org.rocksdb/rocksdbjni {:mvn/version "7.3.1"}
+  cheshire {:mvn/version "5.11.0"}}}
