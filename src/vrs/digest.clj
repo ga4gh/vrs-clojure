@@ -2,7 +2,9 @@
   "Create computable digest for an entity, per the VRS spec:
   
   https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html"
-  (:require [clojure.walk :as walk])
+  (:require [clojure.walk :as walk]
+            [clojure.edn :as edn]
+            [clojure.java.io :as io])
   (:import [java.security MessageDigest]
            [java.util Base64 Arrays]))
 
@@ -53,6 +55,9 @@
      :type "Allele"}],
    :type "Haplotype"})
 
+(def model-objects
+  (-> (io/resource "models.edn") slurp edn/read-string))
+
 (defn- serialize-object [o]
   (reduce (fn [s v] (str s v)) o))
 
@@ -76,5 +81,4 @@
 (->> the-allele
      walk/stringify-keys
      object->vrs-id)
-
 

@@ -1,4 +1,4 @@
-{:paths ["src"]
+{:paths ["src" "validation" "test"]
  :mvn/repos
  {"bintray"
   {:url "http://jcenter.bintray.com"}

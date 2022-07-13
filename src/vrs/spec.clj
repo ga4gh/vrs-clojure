@@ -276,3 +276,23 @@
                   :state {:sequence "C", :type "LiteralSequenceExpression"},
                   :type "Allele"}],
                 :type "VariationSet"}))
+
+(def type->spec
+  {"Number" ::number
+   "DefiniteRange" ::definite-range
+   "IndefiniteRange" ::indefinite-range
+   "LiteralSequenceExpression" ::literal-sequence-expression
+   "SequenceInterval" ::sequence-interval
+   "SequenceExpression" ::sequence-expression
+   "DerivedSequenceExpression" ::derived-sequence-expression
+   "RepeatedSequenceExpression" ::repeated-sequence-expression
+   "ComposedSequenceExpression" ::composed-sequence-expression
+   "Allele" ::allele
+   "Haplotype" ::haplotype
+   "Gene" ::gene
+   "CopyNumber" ::copy-number
+   "Text" ::text
+   "VariationSet" ::variation-set})
+
+(defn valid? [o]
+  (spec/valid? (type->spec (:type o)) o))
