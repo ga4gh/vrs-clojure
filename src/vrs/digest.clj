@@ -9,7 +9,7 @@
 ;; HACK: Use ":" when there is no type identifier prefix.
 ;;
 (def kinds
-  "Map an object type name to a type identifier prefix as keywords."
+  "Map an object type name to a type identifier prefix as a keyword."
   {"Abundance"          :VAB
    "Allele"             :VA
    "ChromosomeLocation" :VCL
