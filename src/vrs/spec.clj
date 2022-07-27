@@ -23,7 +23,7 @@
    :H "Not G (A or C or T or U)"
    :V "Not T nor U (A or C or G)"
    :N "Any (A or C or G or T or U)"
-   :X "Maksed"
+   :X "Masked"
    :- "Gap"})
 
 (def aminos
