@@ -1,32 +1,25 @@
 (ns vrs.digest
-  "Create computable digest for an entity, per the VRS spec:
-  
+  "Digest a VRS according to this specification.
   https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html"
-  (:require [clojure.walk :as walk]
-            [clojure.edn :as edn]
+  (:require [clojure.edn     :as edn]
             [clojure.java.io :as io])
   (:import [java.security MessageDigest]
            [java.util Base64 Arrays]))
 
-(def identifiable-objects
-  #{"Allele"
-    "Haplotype"
-    "CopyNumber"
-    "Text"
-    "VariationSet"
-    "ChromosomeLocation"
-    "SequenceLocation"
-    "SequenceInterval"})
-
-(def type-prefixes
-  {"Sequence" "SQ"
-   "Allele" "VA"
-   "Haplotype" "VH"
-   "Abundance" "VAB"
-   "VariationSet" "VS"
-   "SequenceLocation" "VSL"
-   "ChromosomeLocation" "VCL"
-   "Text" "VT"})
+;; HACK: Use ":" when there is no type prefix.
+;;
+(def kinds
+  "Map object type names to identifier type prefixes as keywords."
+  {"Abundance"          :VAB
+   "Allele"             :VA
+   "ChromosomeLocation" :VCL
+   "CopyNumber"         ":"
+   "Haplotype"          :VH
+   "Sequence"           :SQ
+   "SequenceInterval"   ":"
+   "SequenceLocation"   :VSL
+   "Text"               :VT
+   "VariationSet"       :VS})
 
 (def the-allele
   {:_id "TODO:replacewithvrsid"
@@ -55,9 +48,6 @@
      :type "Allele"}],
    :type "Haplotype"})
 
-(def model-objects
-  (-> (io/resource "models.edn") slurp edn/read-string))
-
 (defn- serialize-object [o]
   (reduce (fn [s v] (str s v)) o))
 
@@ -68,17 +58,10 @@
                        (Arrays/copyOf 24))))
 
 (defn- object->vrs-id [o]
-  (str
-   "ga4gh:"
-   (get type-prefixes (get o "type"))
-   "."
-   (->> (dissoc o "_id")
-        seq
-        (sort-by key)
-        serialize-object
-        str->digest)))
+  (str "ga4gh" (kinds (:type o)) "."
+       (-> o (dissoc :_id)
+           (->> (sort-by key)
+                serialize-object
+                str->digest))))
 
-(->> the-allele
-     walk/stringify-keys
-     object->vrs-id)
-
+(object->vrs-id the-allele)
