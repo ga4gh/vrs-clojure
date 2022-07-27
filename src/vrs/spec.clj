@@ -1,26 +1,76 @@
 (ns vrs.spec
   "Clojure spec implementation of VRS data model
   https://vrs.ga4gh.org/en/stable/terms_and_model.html"
-  (:require [clojure.spec.alpha :as spec]
-            [clojure.set :as set]))
+  (:require [clojure.spec.alpha :as spec]))
+
+;; https://en.wikipedia.org/wiki/International_Union_of_Pure_and_Applied_Chemistry#Amino_acid_and_nucleotide_base_codes
+
+(def nucleics
+  "The IUPAC nucleic acid codes."
+  {:A "Adenine"
+   :C "Cytosine"
+   :G "Guanine"
+   :T "Thymine"
+   :U "Uracil"
+   :R "A or G (purine)"
+   :Y "C or T (pyrimidine)"
+   :K "G or T (ketone bases)"
+   :M "A or C (amino groups)"
+   :S "C or G (strong interaction)"
+   :W "A or T (or U) (weak interaction)"
+   :B "Not A (C or G or T or U)"
+   :D "Not C (A or G or T or U)"
+   :H "Not G (A or C or T or U)"
+   :V "Not T nor U (A or C or G)"
+   :N "Any (A or C or G or T or U)"
+   :X "Maksed"
+   :- "Gap"})
+
+(def aminos
+  "The IUPAC amino acid codes."
+  {:A "Alanine"
+   :B "Aspartic acid or Asparagine"
+   :C "Cysteine"
+   :D "Aspartic acid"
+   :E "Glutamic acid"
+   :F "Phenylalanine"
+   :G "Glycine"
+   :H "Histidine"
+   :I "Isoleucine"
+   :K "Lysine"
+   :L "Leucine"
+   :M "Methionine"
+   :N "Asparagine"
+   :O "Pyrrolysine"
+   :P "Proline"
+   :Q "Glutamine"
+   :R "Arginine"
+   :S "Serine"
+   :T "Threonine"
+   :U "Selenocysteine"
+   :V "Valine"
+   :W "Tryptophan"
+   :Y "Tyrosine"
+   :Z "Glutamic acid or Glutamine"
+   :J "Leucine or isoleucine"
+   :X "Any (unknown)"
+   :* "Translation stop"
+   :- "Gap"})
 
 (spec/def ::curie string?) ; Should be a regex matching a curie
 
 (spec/def ::human-cytoband
   #(re-matches #"^cen|[pq](ter|([1-9][0-9]*(\.[1-9][0-9]*)?))$" %))
 
-;; https://en.wikipedia.org/wiki/International_Union_of_Pure_and_Applied_Chemistry#Amino_acid_and_nucleotide_base_codes
 (spec/def ::residue
-  (set/union
-   #{\A \C \G \T \U \R \Y \K \M \S \W \B \D \H \V \N \X -} ; nucleic acids
-   #{\A \B \C \D \E \F \G \H \I \K \L \M \N \O \P \Q \R
-     \S \T \U \V \W \Y \Z \J \X \* \-} ; amino acids
-   ))
+  (-> (concat aminos nucleics)
+      keys set
+      (->> (map (comp first name)))))
 
 (spec/def ::sequence #(re-matches #"^[A-Z*\-]*$" %))
 
 (spec/def ::type string?) ; Consider limiting to valid vrs types
-(spec/def ::value int?) ; Consider limiting to valid vrs types
+(spec/def ::value int?)   ; Consider limiting to valid vrs types
 
 (spec/def ::number (spec/keys :req-un [::type ::value]))
 
