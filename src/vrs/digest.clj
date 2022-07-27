@@ -6,14 +6,14 @@
   (:import [java.security MessageDigest]
            [java.util Base64 Arrays]))
 
-;; HACK: Use ":" when there is no type prefix.
+;; HACK: Use ":" when there is no type identifier prefix.
 ;;
 (def kinds
-  "Map object type names to identifier type prefixes as keywords."
+  "Map an object type name to a type identifier prefix as keywords."
   {"Abundance"          :VAB
    "Allele"             :VA
    "ChromosomeLocation" :VCL
-   "CopyNumber"         ":"
+   "CopyNumber"         :VCN
    "Haplotype"          :VH
    "Sequence"           :SQ
    "SequenceInterval"   ":"
