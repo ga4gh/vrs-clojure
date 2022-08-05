@@ -23,18 +23,42 @@
 ;; SequenceInterval does not have a type identifier prefix?
 ;; If so, what other types are there?
 
-(def kind
-  "Map an object type name to a type identifier prefix as a keyword."
+(def digestible
+  "Map a digestible type to an identifier prefix as a keyword."
   {"Abundance"          :VAB
    "Allele"             :VA
    "ChromosomeLocation" :VCL
    "CopyNumber"         :VCN
+   "Genotype"           :VGT
    "Haplotype"          :VH
-   "Sequence"           :SQ
-   "SequenceInterval"   nil             ; HACK
    "SequenceLocation"   :VSL
    "Text"               :VT
    "VariationSet"       :VS})
+
+
+(def indigestible
+  "The types that cannot be digested."
+  #{"CURIE"
+    "CompositeSequenceExpression"
+    "CytobandInterval"
+    "DefiniteRange"
+    "DerivedSequenceExpression"
+    "Gene"
+    "GenotypeMember"
+    "HumanCytoband"
+    "IndefiniteRange"
+    "LiteralSequenceExpression"
+    "Number"
+    "RepeatedSequenceExpression"
+    "Residue"
+    "Sequence"
+    "SequenceInterval"})
+
+(def obsolete
+  "Other now obsolete indigestible types."
+  #{"SequenceState"
+    "SimpleInterval"
+    "State"})
 
 (def allele
   "An example Allele VRS from the spec."
@@ -110,7 +134,7 @@
                        (Arrays/copyOf 24))))
 
 (defn- object->vrs-id [o]
-  (str "ga4gh" (kind (:type o)) "."
+  (str "ga4gh" (digestible (:type o)) "."
        (-> o (dissoc :_id)
            (->> (sort-by key)
                 serialize-object
@@ -124,7 +148,7 @@
   "Digest a VRS object."
   [vrs]
   (letfn [(branch? [node] (or   (map? node) (vector? node)))
-          (leaf?   [node] (nil? (-> node :type kind)))
+          (leaf?   [node] (nil? (-> node :type digestible)))
           (make    [node children] (into (empty node) children))]
     (loop [loc (zip/zipper branch? seq make vrs)]
       (if (zip/end? loc) (zip/root loc)
