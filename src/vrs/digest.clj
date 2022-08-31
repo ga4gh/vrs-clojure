@@ -1,14 +1,39 @@
 (ns vrs.digest
   "Digest a VRS according to this specification.
   https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html"
-  (:require [clojure.data.json       :as json]
-            [clojure.edn             :as edn]
-            [clojure.java.io         :as io]
-            [clojure.pprint          :refer [pprint]]
-            [clojure.string          :as str]
-            [clojure.zip             :as zip])
-  (:import [java.security MessageDigest]
+  (:require [clojure.data.json :as json]
+            [clojure.pprint    :refer [pprint]]
+            [clojure.walk      :as walk])
+  (:import [clojure.lang Keyword]
+           [java.security MessageDigest]
            [java.util Arrays Base64]))
+
+(def ^:private the-allele
+  {:_id "TODO:replacewithvrsid"
+   :members
+   [{:_id "TODO:replacewithvrsid"
+     :location
+     {:_id "TODO:replacewithvrsid"
+      :interval
+      {:end {:type "Number", :value 44908822},
+       :start {:type "Number", :value 44908821},
+       :type "SequenceInterval"},
+      :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
+      :type "SequenceLocation"},
+     :state {:sequence "C", :type "LiteralSequenceExpression"},
+     :type "Allele"}
+    {:_id "TODO:replacewithvrsid"
+     :location
+     {:_id "TODO:replacewithvrsid"
+      :interval
+      {:end {:type "Number", :value 44908684},
+       :start {:type "Number", :value 44908683},
+       :type "SequenceInterval"},
+      :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
+      :type "SequenceLocation"},
+     :state {:sequence "C", :type "LiteralSequenceExpression"},
+     :type "Allele"}],
+   :type "Haplotype"})
 
 (defmacro dump
   "Dump [EXPRESSION VALUE] where VALUE is EXPRESSION's value."
@@ -18,10 +43,14 @@
        (pprint ['~expression x#])
        x#)))
 
-;; Q: Is SequenceInterval a "leaf" map in the schema?
-;; A "leaf" map is a map that cannot be replaced with an :_id?
-;; SequenceInterval does not have a type identifier prefix?
-;; If so, what other types are there?
+(defmacro trace
+  "Like DUMP but map location metadata."
+  [expression]
+  (let [{:keys [line column]} (meta &form)]
+    `(let [x# ~expression]
+       (do
+         (pprint {:column ~column :file ~*file* :line ~line '~expression x#})
+         x#))))
 
 (def digestible
   "Map a digestible type to an identifier prefix as a keyword."
@@ -36,8 +65,8 @@
    "VariationSet"       :VS})
 
 
-(def indigestible
-  "The types that cannot be digested."
+(def indigestible?
+  "Set of the types that cannot be digested."
   #{"CURIE"
     "CompositeSequenceExpression"
     "CytobandInterval"
@@ -73,11 +102,16 @@
    :state    {:sequence "T"
               :type     "LiteralSequenceExpression"}})
 
-(defn codepoints
+(defn keyword->codepoint-seq
+  "Return a codepoint (integer) iterator on the name of KW."
+  [^Keyword kw]
+  (-> kw name .codePoints .iterator iterator-seq))
+
+(defn ^:private codepoints
   "Compare keys LEFT and RIGHT codepoint by codepoint in UTF-8."
   [left right]
-  (loop [seqL (-> left  name .codePoints .iterator iterator-seq)
-         seqR (-> right name .codePoints .iterator iterator-seq)]
+  (loop [seqL (keyword->codepoint-seq left)
+         seqR (keyword->codepoint-seq right)]
     (let [cpL (first seqL) cpR (first seqR)]
       (cond (and (nil? cpL) (nil? cpR))  0
             (nil? cpL)                  -1
@@ -86,7 +120,7 @@
             (> cpL cpR)                  1
             :else (recur (rest seqL) (rest seqR))))))
 
-(defn jsonify
+(defn ^:private jsonify
   "Return a canonical JSON string for the map M."
   [m]
   (-> codepoints sorted-map-by
@@ -95,65 +129,42 @@
 
 (jsonify allele)
 
-(def the-allele
-  {:_id "TODO:replacewithvrsid"
-   :members
-   [{:_id "TODO:replacewithvrsid"
-     :location
-     {:_id "TODO:replacewithvrsid"
-      :interval
-      {:end {:type "Number", :value 44908822},
-       :start {:type "Number", :value 44908821},
-       :type "SequenceInterval"},
-      :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-      :type "SequenceLocation"},
-     :state {:sequence "C", :type "LiteralSequenceExpression"},
-     :type "Allele"}
-    {:_id "TODO:replacewithvrsid"
-     :location
-     {:_id "TODO:replacewithvrsid"
-      :interval
-      {:end {:type "Number", :value 44908684},
-       :start {:type "Number", :value 44908683},
-       :type "SequenceInterval"},
-      :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-      :type "SequenceLocation"},
-     :state {:sequence "C", :type "LiteralSequenceExpression"},
-     :type "Allele"}],
-   :type "Haplotype"})
-
-(defn- serialize-object [o]
-  (reduce (fn [s v] (str s v)) o))
-
-(defn digest
+(defn ^:private digest
   "Base64-encode the SHA-512 digest of string S."
   [s]
-  (.encodeToString (Base64/getEncoder)
-                   (-> (MessageDigest/getInstance "SHA-512")
-                       (.digest (.getBytes s))
-                       (Arrays/copyOf 24))))
+  (-> (MessageDigest/getInstance "SHA-512")
+      (.digest (.getBytes s))
+      (Arrays/copyOf 24)
+      (->> (.encodeToString (Base64/getEncoder)))))
 
-(defn- object->vrs-id [o]
-  (str "ga4gh" (digestible (:type o)) "."
-       (-> o (dissoc :_id)
-           (->> (sort-by key)
-                serialize-object
-                digest))))
-
-(object->vrs-id the-allele)
+(defn ^:private idify
+  "Add an _ID field to THING mapped to its digest when digestible."
+  [{:keys [type] :as thing}]
+  (let [prefix (digestible type)]
+    (cond (keyword? prefix)    (-> thing jsonify digest
+                                   (->> (str "ga4gh" prefix \.)
+                                        (assoc thing :_id)))
+          (indigestible? type) thing
+          (map? thing)         (dump thing)
+          :else                thing)))
 
 ;; https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html#identify
 
-(defn ^:private digest
+(defn identify
   "Digest a VRS object."
   [vrs]
-  (letfn [(branch? [node] (or   (map? node) (vector? node)))
-          (leaf?   [node] (nil? (-> node :type digestible)))
-          (make    [node children] (into (empty node) children))]
-    (loop [loc (zip/zipper branch? seq make vrs)]
-      (if (zip/end? loc) (zip/root loc)
-          (let [node (zip/node loc)]
-            (recur (zip/next
-                    (if (leaf? node)
-                      loc
-                      loc))))))))
+  (walk/postwalk idify vrs))
+
+{:type "Allele",
+ :location
+ {:interval
+  {:end {:type "Number", :value 44908822},
+   :start {:type "Number", :value 44908821},
+   :type "SequenceInterval"},
+  :sequence_id "refseq:NC_000019.10",
+  :type "SequenceLocation",
+  :_id "ga4gh:VSL.esDSArZQC+Sx+96ZZzHnzAVNOc439oE5"},
+ :state {:sequence "T", :type "LiteralSequenceExpression"},
+ :_id "ga4gh:VA.ndxmI5NW8lEuyvtQ+0wyxi4ABP2XKbhk"}
+
+(identify allele)
