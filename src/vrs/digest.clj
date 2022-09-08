@@ -8,7 +8,7 @@
            [java.security MessageDigest]
            [java.util Arrays Base64]))
 
-(def ^:private the-allele
+(def ^:private haplotype
   {:_id "TODO:replacewithvrsid"
    :members
    [{:_id "TODO:replacewithvrsid"
@@ -91,16 +91,16 @@
 
 (def allele
   "An example Allele VRS from the spec."
-  {:type     "Allele"
-   :location {:interval    {:end   {:type  "Number"
-                                    :value 44908822}
-                            :start {:type  "Number"
-                                    :value 44908821}
-                            :type  "SequenceInterval"}
-              :sequence_id "refseq:NC_000019.10"
-              :type        "SequenceLocation"}
-   :state    {:sequence "T"
-              :type     "LiteralSequenceExpression"}})
+  {:_id "ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc",
+   :location
+   {:interval
+    {:end {:type "Number", :value 44908822},
+     :start {:type "Number", :value 44908821},
+     :type "SequenceInterval"},
+    :sequence_id "refseq:NC_000019.10",
+    :type "SequenceLocation"},
+   :state {:sequence "T", :type "LiteralSequenceExpression"},
+   :type "Allele"})
 
 (defn keyword->codepoint-seq
   "Return a codepoint (integer) iterator on the name of KW."
@@ -155,16 +155,69 @@
   [vrs]
   (walk/postwalk idify vrs))
 
-{:type "Allele",
+{:_id "ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc",
  :location
  {:interval
   {:end {:type "Number", :value 44908822},
    :start {:type "Number", :value 44908821},
    :type "SequenceInterval"},
   :sequence_id "refseq:NC_000019.10",
-  :type "SequenceLocation",
-  :_id "ga4gh:VSL.esDSArZQC+Sx+96ZZzHnzAVNOc439oE5"},
+  :type "SequenceLocation"},
  :state {:sequence "T", :type "LiteralSequenceExpression"},
- :_id "ga4gh:VA.ndxmI5NW8lEuyvtQ+0wyxi4ABP2XKbhk"}
+ :type "Allele"}
 
+(jsonify allele)
 (identify allele)
+(identify haplotype)
+
+(def ga4gh:VA.DkZLLMnwoH6zIncSRh2c05nzCNLdTqHl
+  "JSON VRS with ID ga4gh:VA.DkZLLMnwoH6zIncSRh2c05nzCNLdTqHl."
+  "{
+    \"_id\": \"ga4gh:VA.DkZLLMnwoH6zIncSRh2c05nzCNLdTqHl\",
+    \"type\": \"Allele\",
+    \"location\": {
+        \"type\": \"SequenceLocation\",
+        \"sequence_id\": \"ga4gh:SQ._0wi-qoDrvram155UmcSC-zA5ZK4fpLT\",
+        \"interval\": {
+            \"type\": \"SequenceInterval\",
+            \"start\": {
+                \"type\": \"Number\",
+                \"value\": 32936731
+            },
+            \"end\": {
+                \"type\": \"Number\",
+                \"value\": 32936732
+            }
+        }
+    },
+    \"state\": {
+        \"type\": \"LiteralSequenceExpression\",
+        \"sequence\": \"C\"
+    }
+   }")
+
+(def ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc
+  "JSON VRS with ID ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc."
+  "{
+    \"_id\": \"ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc\",
+    \"location\": {
+      \"interval\": {
+        \"end\": {
+          \"type\": \"Number\",
+          \"value\": 44908822
+        },
+        \"start\": {
+          \"type\": \"Number\",
+          \"value\": 44908821
+        },
+        \"type\": \"SequenceInterval\"
+      },
+      \"sequence_id\": \"refseq:NC_000019.10\",
+      \"type\": \"SequenceLocation\"
+    },
+    \"state\": {
+      \"sequence\": \"T\",
+      \"type\": \"LiteralSequenceExpression\"
+    },
+    \"type\": \"Allele\"
+   }")
