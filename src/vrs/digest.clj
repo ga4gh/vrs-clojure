@@ -170,7 +170,7 @@
 (identify allele)
 (identify haplotype)
 
-(def ga4gh:VA.DkZLLMnwoH6zIncSRh2c05nzCNLdTqHl
+(def DkZLLMnwoH6zIncSRh2c05nzCNLdTqHl
   "JSON VRS with ID ga4gh:VA.DkZLLMnwoH6zIncSRh2c05nzCNLdTqHl."
   "{
     \"_id\": \"ga4gh:VA.DkZLLMnwoH6zIncSRh2c05nzCNLdTqHl\",
@@ -196,7 +196,7 @@
     }
    }")
 
-(def ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc
+(def _YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc
   "JSON VRS with ID ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc."
   "{
     \"_id\": \"ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc\",
