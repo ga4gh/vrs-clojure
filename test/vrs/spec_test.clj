@@ -9,6 +9,6 @@
 
 (deftest spec-test
   (testing "testing validation of model objects"
-    (run! #(is vrs-spec/valid? (:in %)) (vals model-objects))))
+    (run! #(is (vrs-spec/valid? (:in %))) (map first (vals model-objects)))))
 
 (clojure.test/test-all-vars *ns*)
