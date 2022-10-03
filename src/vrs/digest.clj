@@ -3,7 +3,8 @@
   https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html"
   (:require [clojure.data.json :as json]
             [clojure.pprint    :refer [pprint]]
-            [clojure.walk      :as walk])
+            [clojure.walk      :as walk]
+            [clj-yaml.core     :as yaml])
   (:import [clojure.lang Keyword]
            [java.security MessageDigest]
            [java.util Arrays Base64]))
@@ -15,24 +16,24 @@
      :location
      {:_id "TODO:replacewithvrsid"
       :interval
-      {:end {:type "Number", :value 44908822},
-       :start {:type "Number", :value 44908821},
-       :type "SequenceInterval"},
-      :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-      :type "SequenceLocation"},
-     :state {:sequence "C", :type "LiteralSequenceExpression"},
+      {:end {:type "Number" :value 44908822}
+       :start {:type "Number" :value 44908821}
+       :type "SequenceInterval"}
+      :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
+      :type "SequenceLocation"}
+     :state {:sequence "C" :type "LiteralSequenceExpression"}
      :type "Allele"}
     {:_id "TODO:replacewithvrsid"
      :location
      {:_id "TODO:replacewithvrsid"
       :interval
-      {:end {:type "Number", :value 44908684},
-       :start {:type "Number", :value 44908683},
-       :type "SequenceInterval"},
-      :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-      :type "SequenceLocation"},
-     :state {:sequence "C", :type "LiteralSequenceExpression"},
-     :type "Allele"}],
+      {:end {:type "Number" :value 44908684}
+       :start {:type "Number" :value 44908683}
+       :type "SequenceInterval"}
+      :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
+      :type "SequenceLocation"}
+     :state {:sequence "C" :type "LiteralSequenceExpression"}
+     :type "Allele"}]
    :type "Haplotype"})
 
 (defmacro dump
@@ -91,15 +92,15 @@
 
 (def allele
   "An example Allele VRS from the spec."
-  {:_id "ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc",
+  {:_id "ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc"
    :location
    {:interval
-    {:end {:type "Number", :value 44908822},
-     :start {:type "Number", :value 44908821},
-     :type "SequenceInterval"},
-    :sequence_id "refseq:NC_000019.10",
-    :type "SequenceLocation"},
-   :state {:sequence "T", :type "LiteralSequenceExpression"},
+    {:end {:type "Number" :value 44908822}
+     :start {:type "Number" :value 44908821}
+     :type "SequenceInterval"}
+    :sequence_id "refseq:NC_000019.10"
+    :type "SequenceLocation"}
+   :state {:sequence "T" :type "LiteralSequenceExpression"}
    :type "Allele"})
 
 (defn keyword->codepoint-seq
@@ -155,15 +156,15 @@
   [vrs]
   (walk/postwalk idify vrs))
 
-{:_id "ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc",
+{:_id "ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc"
  :location
  {:interval
-  {:end {:type "Number", :value 44908822},
-   :start {:type "Number", :value 44908821},
-   :type "SequenceInterval"},
-  :sequence_id "refseq:NC_000019.10",
-  :type "SequenceLocation"},
- :state {:sequence "T", :type "LiteralSequenceExpression"},
+  {:end {:type "Number" :value 44908822}
+   :start {:type "Number" :value 44908821}
+   :type "SequenceInterval"}
+  :sequence_id "refseq:NC_000019.10"
+  :type "SequenceLocation"}
+ :state {:sequence "T" :type "LiteralSequenceExpression"}
  :type "Allele"}
 
 (jsonify allele)
@@ -221,3 +222,6 @@
     },
     \"type\": \"Allele\"
    }")
+
+(-> "./validation/functions.yaml" slurp yaml/parse-string)
+(-> "./validation/models.yaml" slurp yaml/parse-string)
