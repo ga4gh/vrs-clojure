@@ -78,9 +78,12 @@
 
 (comment (spec/valid? ::Number {:type "Number" :value 3}))
 
-(spec/def ::min ::Number)
-(spec/def ::max ::Number)
-(spec/def ::DefiniteRange (spec/keys :req-un [::type ::min ::max]))
+(spec/def ::min nat-int?)
+
+(spec/def ::max nat-int?)
+
+(spec/def ::DefiniteRange
+  (spec/keys :req-un [::max ::min ::type]))
 
 (comment
   (spec/valid? ::DefiniteRange
@@ -362,6 +365,10 @@
 (spec/def ::AbsoluteCopyNumber
   (spec/keys :opt-un [::_id]
              :req-un [::type ::subject ::copies]))
+
+(spec/def ::SimpleInterval
+  (spec/keys :opt-un [::_id]
+             :req-un [::type ::start ::end]))
 
 (def ^:private the-namespace-name
   "The name of this namespace as a string."
