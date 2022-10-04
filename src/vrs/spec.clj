@@ -98,7 +98,7 @@
                 :value 22}))
 
 (spec/def ::LiteralSequenceExpression
-  (spec/keys :req-un [::type ::sequence]))
+  (spec/keys :req-un [::sequence ::type]))
 
 (comment
   (spec/valid? ::LiteralSequenceExpression
@@ -116,13 +116,17 @@
 
 ;; TODO implememnt simple interval eventually...
 (spec/def ::interval ::SequenceInterval)
+
 (spec/def ::_id string?)
+
 (spec/def ::sequence_id string?)
-(spec/def ::sequence-location
-  (spec/keys :req-un [::_id ::type ::sequence_id ::interval]))
+
+(spec/def ::SequenceLocation
+  (spec/keys :opt-un [::_id]
+             :req-un [::type ::sequence_id ::interval]))
 
 (comment
-  (spec/valid? ::sequence-location
+  (spec/valid? ::SequenceLocation
                {:_id "TODO:replacewithvrsid"
                 :type "SequenceLocation"
                 :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
@@ -132,19 +136,22 @@
 
 ;; TODO, uncomment after sequence location
 (spec/def ::reverse_complement boolean?)
-(spec/def ::location ::sequence-location)
-(spec/def ::DerivedSequenceExpression
-  (spec/keys :req-un [::type #_ ::location ::reverse_complement]))
 
-(spec/def ::seq_expr (spec/or ::literal-sequence-expression ::LiteralSequenceExpression
-                              ::derived-sequence-expression
-                              ::DerivedSequenceExpression))
-(spec/def ::count (spec/or ::number ::Number
+(spec/def ::location ::SequenceLocation)
+
+(spec/def ::DerivedSequenceExpression
+  (spec/keys :req-un [#_::location ::reverse_complement ::type]))
+
+(spec/def ::seq_expr
+  (spec/or ::derived-sequence-expression ::DerivedSequenceExpression
+           ::literal-sequence-expression ::LiteralSequenceExpression))
+
+(spec/def ::count (spec/or ::definite-range   ::DefiniteRange
                            ::indefinite-range ::IndefiniteRange
-                           ::definite-range ::DefiniteRange))
+                           ::number           ::Number))
 
 (spec/def ::RepeatedSequenceExpression
-  (spec/keys :req-un [::type ::seq_expr ::count]))
+  (spec/keys :req-un [::count #_ ::seq_expr ::type]))
 
 (comment
   (spec/valid? ::RepeatedSequenceExpression
@@ -191,12 +198,16 @@
   (spec/or ::composed-sequence-expression ::ComposedSequenceExpression
            ::derived-sequence-expression ::DerivedSequenceExpression
            ::literal-sequence-expression ::LiteralSequenceExpression))
+
 (spec/def :vrs.spec.allele/location
   (spec/or ::curie ::curie
            ::location ::location))
+
 (spec/def ::state ::SequenceExpression)
+
 (spec/def ::Allele
-  (spec/keys :req-un [::_id ::type :vrs.spec.allele/location ::state]))
+  (spec/keys :opt-un [::_id]
+             :req-un [::state ::type :vrs.spec.allele/location]))
 
 (comment
   (spec/valid? ::Allele
@@ -215,8 +226,10 @@
 (spec/def ::haplotype-member (spec/or ::allele ::Allele
                                       ::curie ::curie))
 (spec/def ::members (spec/coll-of ::haplotype-member))
+
 (spec/def ::Haplotype
-  (spec/keys :req-un [::_id ::type ::members]))
+  (spec/keys :opt-un [::_id]
+             :req-un [::type ::members]))
 
 (comment
   (spec/valid? ::Haplotype
@@ -261,15 +274,18 @@
   (spec/keys :req-un [::type ::gene_id]))
 
 (spec/def ::feature ::Gene)
+
 (spec/def ::copies
   (spec/or ::number ::Number
            ::indefinite-range ::IndefiniteRange
            ::definite-range ::DefiniteRange))
+
 (spec/def ::subject
   (spec/or ::curie ::curie
            ::feature ::feature
            ::sequence-expression ::SequenceExpression
            ::molecular-variation ::molecular-variation))
+
 (spec/def ::CopyNumber
   (spec/keys :req-un [::_id ::type ::subject ::copies]))
 
@@ -295,22 +311,28 @@
     :type "CopyNumber"}))
 
 (spec/def ::definition string?)
+
 (spec/def ::Text
   (spec/keys :req_un [::_id ::type ::definition]))
 
 (spec/def ::systemic-variation ::CopyNumber)
+
 (spec/def ::utility-variation
   (spec/or ::text ::Text
            ::variation-set ::VariationSet))
+
 (spec/def ::variation
   (spec/or ::molecular-variation ::molecular-variation
            ::systemic-variation ::systemic-variation
            ::utility-variation ::utility-variation))
+
 (spec/def :vrs.spec/member
   (spec/or ::curie ::curie
            ::variation ::variation))
+
 (spec/def :vrs.spec/members
   (spec/coll-of :vrs.spec/member))
+
 (spec/def ::VariationSet
   (spec/keys :req_un [::_id ::type :vrs.spec/members]))
 
@@ -337,10 +359,13 @@
                   :type "Allele"}],
                 :type "VariationSet"}))
 
+(spec/def ::AbsoluteCopyNumber
+  (spec/keys :opt-un [::_id]
+             :req-un [::type ::subject ::copies]))
+
 (def ^:private the-namespace-name
   "The name of this namespace as a string."
   (name (ns-name *ns*)))
 
 (defn valid? [o]
-  (trace o)
   (spec/valid? (keyword the-namespace-name (:type o)) o))
