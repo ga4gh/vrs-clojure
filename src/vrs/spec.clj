@@ -370,6 +370,9 @@
   (spec/keys :opt-un [::_id]
              :req-un [::type ::start ::end]))
 
+(spec/def ::CytobandInterval
+  (spec/keys :req-un [::type ::start ::end]))
+
 (def ^:private the-namespace-name
   "The name of this namespace as a string."
   (name (ns-name *ns*)))
