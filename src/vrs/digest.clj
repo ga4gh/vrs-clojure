@@ -7,7 +7,20 @@
             [clj-yaml.core     :as yaml])
   (:import [clojure.lang Keyword]
            [java.security MessageDigest]
-           [java.util Arrays Base64]))
+           [java.util Arrays Base64 Base64$Encoder]))
+
+(-> (java.util.Base64/getUrlEncoder)
+    class
+    (. getDeclaredField "toBase64URL"))
+
+(-> (java.util.Base64/getUrlEncoder)
+    clojure.reflect/reflect
+    :members
+    (->> (filter #(= 'toBase64URL (:name %)))))
+
+#_java.util.Base64$Encoder/toBase64URL
+
+;; => #object[java.lang.reflect.Field 0x44c125c7 "private static final char[] java.util.Base64$Encoder.toBase64URL"]
 
 (def ^:private haplotype
   {:_id "TODO:replacewithvrsid"
@@ -35,14 +48,6 @@
      :state {:sequence "C" :type "LiteralSequenceExpression"}
      :type "Allele"}]
    :type "Haplotype"})
-
-(defmacro dump
-  "Dump [EXPRESSION VALUE] where VALUE is EXPRESSION's value."
-  [expression]
-  `(let [x# ~expression]
-     (do
-       (pprint ['~expression x#])
-       x#)))
 
 (defmacro trace
   "Like DUMP but map location metadata."
@@ -136,7 +141,7 @@
   (-> (MessageDigest/getInstance "SHA-512")
       (.digest (.getBytes s))
       (Arrays/copyOf 24)
-      (->> (.encodeToString (Base64/getEncoder)))))
+      (->> (.encodeToString (Base64/getUrlEncoder)))))
 
 (defn ^:private idify
   "Add an _ID field to THING mapped to its digest when digestible."

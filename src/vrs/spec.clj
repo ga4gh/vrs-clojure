@@ -1,7 +1,9 @@
 (ns vrs.spec
   "Clojure spec implementation of VRS data model
   https://vrs.ga4gh.org/en/stable/terms_and_model.html"
-  (:require [clojure.spec.alpha :as s]))
+  (:require [clojure.spec.alpha :as s]
+            [clojure.string     :as str]
+            [vrs.digest         :as digest]))
 
 ;; https://en.wikipedia.org/wiki/International_Union_of_Pure_and_Applied_Chemistry#Amino_acid_and_nucleotide_base_codes
 
@@ -57,28 +59,36 @@
    :* "Translation stop"
    :- "Gap"})
 
-(s/def ::string (s/and string? seq))
+(def sequence-regex
+  "Match the characters in the aminos and nucleics keys."
+  (re-pattern (str "^[" (-> (concat (keys aminos) (keys nucleics))
+                            set
+                            (->> (map name) (apply str))
+                            (str/escape {\- "\\-" \* "\\*"})) "]*$")))
 
-(s/def ::curie string?) ; Should be a regex matching a curie
-
-(s/def ::human-cytoband
-  #(re-matches #"^cen|[pq](ter|([1-9][0-9]*(\.[1-9][0-9]*)?))$" %))
-
-(s/def ::residue
-  (-> (concat aminos nucleics)
-      keys set
-      (->> (map (comp first name)))))
-
-(s/def ::sequence #(re-matches #"^[A-Z*\-]*$" %))
-
-(s/def ::type string?) ; Consider limiting to valid vrs types
-(s/def ::value int?)   ; Consider limiting to valid vrs types
-
-(s/def ::Number (s/keys :req-un [::type ::value]))
+(def curie-regex
+  (-> digest/digestible vals
+      (->> (map name)
+           sort
+           (interpose "|")
+           (apply str)))
+  )
 
 (s/def ::min nat-int?)
 
 (s/def ::max nat-int?)
+
+(s/def ::string (s/and string? seq))
+
+(s/def ::curie ::string)          ; Should be a regex matching a curie
+
+(s/def ::sequence (partial re-matches sequence-regex))
+
+(s/def ::type ::string)         ; Consider limiting to valid vrs types
+
+(s/def ::value int?)            ; Consider limiting to valid vrs types
+
+(s/def ::Number (s/keys :req-un [::type ::value]))
 
 (s/def ::DefiniteRange
   (s/keys :req-un [::max ::min ::type]))
@@ -210,7 +220,6 @@
 (s/def ::VariationSet
   (s/keys :req_un [::_id ::type ::members]))
 
-
 (s/def ::AbsoluteCopyNumber
   (s/keys :opt-un [::_id]
           :req-un [::type ::subject ::copies]))
@@ -228,150 +237,3 @@
 
 (defn valid? [o]
   (s/valid? (keyword the-namespace-name (:type o)) o))
-
-(comment (s/valid? ::Number {:type "Number" :value 3}))
-
-(comment
-  (s/valid? ::DefiniteRange
-            {:type "DefiniteRange"
-             :min {:type "Number" :value 3}
-             :max {:type "Number" :value 5}}))
-
-(comment
-  (s/valid? ::IndefiniteRange
-            {:type "IndefiniteRange"
-             :comparator "<="
-             :value 22}))
-
-(comment
-  (s/valid? ::LiteralSequenceExpression
-            {:sequence "ACGT"
-             :type "LiteralSequenceExpression"}))
-(comment
-  (s/valid? ::SequenceInterval
-            {:type "SequenceInterval"
-             :start {:type "Number" :value 44908821}
-             :end {:type "Number" :value 44908822}}))
-(comment
-  (s/valid? ::SequenceLocation
-            {:_id "TODO:replacewithvrsid"
-             :type "SequenceLocation"
-             :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
-             :interval {:type "SimpleInterval"
-                        :start 44908821
-                        :end 44908822}}))
-
-(comment
-  (s/valid? ::RepeatedSequenceExpression
-            {:count {:comparator ">=", :type "IndefiniteRange", :value 6},
-             :seq_expr
-             {:location
-              {:interval
-               {:end {:type "Number", :value 44908822},
-                :start {:type "Number", :value 44908821},
-                :type "SequenceInterval"},
-               :_id "TODO:replacewithvrsid",
-               :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-               :type "SequenceLocation"},
-              :reverse_complement false,
-              :type "DerivedSequenceExpression"},
-             :type "RepeatedSequenceExpression"}))
-
-(comment
-  (s/valid? ::ComposedSequenceExpression
-            {:type "ComposedSequenceExpression",
-             :components
-             [{:type "RepeatedSequenceExpression",
-               :seq_expr {:type "LiteralSequenceExpression",
-                          :sequence "GCG"},
-               :count {:type "Number", :value 11}}
-              {:type "RepeatedSequenceExpression",
-               :seq_expr {:type "LiteralSequenceExpression",
-                          :sequence "GCA"},
-               :count {:type "Number", :value 3}}
-              {:type "RepeatedSequenceExpression",
-               :seq_expr {:type "LiteralSequenceExpression",
-                          :sequence "GCG"},
-               :count {:type "Number", :value 1}}]}))
-
-(comment
-  (s/valid? ::Allele
-            {:_id "TODO:replacewithvrsid"
-             :location
-             {:interval
-              {:end {:type "Number", :value 44908822},
-               :start {:type "Number", :value 44908821},
-               :type "SequenceInterval"},
-              :_id "TODO:replacewithvrsid"
-              :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-              :type "SequenceLocation"},
-             :state {:sequence "T", :type "SequenceState"},
-             :type "Allele"}))
-(comment
-  (s/valid? ::Haplotype
-            {:_id "TODO:replacewithvrsid"
-             :members
-             [{:_id "TODO:replacewithvrsid"
-               :location
-               {:_id "TODO:replacewithvrsid"
-                :interval
-                {:end {:type "Number", :value 44908822},
-                 :start {:type "Number", :value 44908821},
-                 :type "SequenceInterval"},
-                :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-                :type "SequenceLocation"},
-               :state {:sequence "C", :type "LiteralSequenceExpression"},
-               :type "Allele"}
-              {:_id "TODO:replacewithvrsid"
-               :location
-               {:_id "TODO:replacewithvrsid"
-                :interval
-                {:end {:type "Number", :value 44908684},
-                 :start {:type "Number", :value 44908683},
-                 :type "SequenceInterval"},
-                :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-                :type "SequenceLocation"},
-               :state {:sequence "C", :type "LiteralSequenceExpression"},
-               :type "Allele"}],
-             :type "Haplotype"})
-
-  (s/valid? ::Haplotype
-            {:_id "TODO:replacewithvrsid"
-             :members
-             ["ga4gh:VA.-kUJh47Pu24Y3Wdsk1rXEDKsXWNY-68x"
-              "ga4gh:VA.Z_rYRxpUvwqCLsCBO3YLl70o2uf9_Op1"]
-             :type "Haplotype"}))
-(comment
-  (s/valid? ::CopyNumber
-            {:_id "TODO:replacewithvrsid"
-             :copies
-             {:comparator ">="
-              :type "IndefiniteRange"
-              :value 3}
-             :subject
-             {:gene_id "ncbigene:348"
-              :type "Gene"}
-             :type "CopyNumber"}))
-
-(comment
-  (s/valid? ::VariationSet
-            {:members
-             [{:location
-               {:interval
-                {:end {:type "Number", :value 44908822},
-                 :start {:type "Number", :value 44908821},
-                 :type "SequenceInterval"},
-                :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-                :type "SequenceLocation"},
-               :state {:sequence "C", :type "LiteralSequenceExpression"},
-               :type "Allele"}
-              {:location
-               {:interval
-                {:end {:type "Number", :value 44908684},
-                 :start {:type "Number", :value 44908683},
-                 :type "SequenceInterval"},
-                :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-                :type "SequenceLocation"},
-               :state {:sequence "C", :type "LiteralSequenceExpression"},
-               :type "Allele"}],
-             :type "VariationSet"}))
