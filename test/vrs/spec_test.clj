@@ -1,10 +1,12 @@
 (ns vrs.spec-test
+  "Test the spec model of VRS objects."
   (:require [clojure.test    :refer [deftest is testing]]
             [clojure.edn     :as edn]
             [clojure.java.io :as io]
             [vrs.spec        :as spec]))
 
 (def model-objects
+  "A seq of seqs of verified VRS objects."
   (-> "models.edn" io/resource slurp edn/read-string))
 
 (deftest spec-test
