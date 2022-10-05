@@ -7,6 +7,10 @@
 
 ;; https://en.wikipedia.org/wiki/International_Union_of_Pure_and_Applied_Chemistry#Amino_acid_and_nucleotide_base_codes
 
+(def ^:private the-namespace-name
+  "The name of this namespace as a string for `valid?` below."
+  (name (ns-name *ns*)))
+
 (def nucleics
   "The IUPAC nucleic acid codes."
   {:A "Adenine"
@@ -61,18 +65,31 @@
 
 (def sequence-regex
   "Match the characters in the aminos and nucleics keys."
-  (re-pattern (str "^[" (-> (concat (keys aminos) (keys nucleics))
-                            set
-                            (->> (map name) (apply str))
-                            (str/escape {\- "\\-" \* "\\*"})) "]*$")))
+  (-> (concat (keys aminos) (keys nucleics)) set
+      (->> (map name) (apply str))
+      (str/escape {\- "\\-" \* "\\*"})
+      (interpose ["^[" "]*$"])
+      (->> (apply str))
+      re-pattern))
 
+;; Recent JDKs put java.util.Base64$Encoder/toBase64URL off limits!
+;;
 (def curie-regex
+  "Match a CURIE to 3 groups: 'ga4gh':'type'.'digest'."
   (-> digest/digestible vals
       (->> (map name)
            sort
            (interpose "|")
-           (apply str)))
-  )
+           (apply str))
+      (interpose ["^(ga4gh):(" ")\\.([a-zA-Z_-]{24})$"])
+      (->> (apply str))
+      re-pattern))
+
+(defn curie?
+  "True when O is a CURIE."
+  [o]
+  (try (re-matches curie-regex o)
+       (catch Throwable _)))
 
 (s/def ::min nat-int?)
 
@@ -80,7 +97,8 @@
 
 (s/def ::string (s/and string? seq))
 
-(s/def ::curie ::string)          ; Should be a regex matching a curie
+(s/def ::curie curie?)
+#_(s/def ::curie (constantly true))
 
 (s/def ::sequence (partial re-matches sequence-regex))
 
@@ -94,7 +112,9 @@
   (s/keys :req-un [::max ::min ::type]))
 
 (s/def ::comparator #{"<=" ">="})
-(s/def ::IndefiniteRange (s/keys :req-un [::comparator ::type ::value]))
+
+(s/def ::IndefiniteRange
+  (s/keys :req-un [::comparator ::type ::value]))
 
 (s/def ::LiteralSequenceExpression
   (s/keys :req-un [::sequence ::type]))
@@ -104,9 +124,9 @@
 
 (s/def ::interval ::SequenceInterval)
 
-(s/def ::_id string?)
+(s/def ::_id ::curie)
 
-(s/def ::sequence_id string?)
+(s/def ::sequence_id ::string)
 
 (s/def ::SequenceLocation
   (s/keys :opt-un [::_id]
@@ -122,40 +142,45 @@
 
 (s/def ::seq_expr
   (s/or ::derived-sequence-expression ::DerivedSequenceExpression
-           ::literal-sequence-expression ::LiteralSequenceExpression))
+        ::literal-sequence-expression ::LiteralSequenceExpression))
 
-(s/def ::count (s/or ::definite-range   ::DefiniteRange
-                           ::indefinite-range ::IndefiniteRange
-                           ::number           ::Number))
+(s/def ::count
+  (s/or ::definite-range   ::DefiniteRange
+        ::indefinite-range ::IndefiniteRange
+        ::number           ::Number))
 
 (s/def ::RepeatedSequenceExpression
   (s/keys :req-un [::count #_ ::seq_expr ::type]))
 
 (s/def ::component
-  (s/or ::literal-sequence-expression ::LiteralSequenceExpression
-        ::repeated-sequence-expression ::RepeatedSequenceExpression
-        ::derived-sequence-expression ::DerivedSequenceExpression))
+  (s/or ::derived-sequence-expression  ::DerivedSequenceExpression
+        ::literal-sequence-expression  ::LiteralSequenceExpression
+        ::repeated-sequence-expression ::RepeatedSequenceExpression))
+
 (s/def ::components (s/coll-of ::component))
+
 (s/def ::ComposedSequenceExpression
   (s/keys :req-un [::type ::components]))
 
 (s/def ::SequenceExpression
   (s/or ::composed-sequence-expression ::ComposedSequenceExpression
-        ::derived-sequence-expression ::DerivedSequenceExpression
-        ::literal-sequence-expression ::LiteralSequenceExpression))
+        ::derived-sequence-expression  ::DerivedSequenceExpression
+        ::literal-sequence-expression  ::LiteralSequenceExpression))
 
 (s/def :vrs.spec.allele/location
-  (s/or ::curie ::curie
-           ::location ::location))
+  (s/or ::curie    ::curie
+        ::location ::location))
 
 (s/def ::state ::SequenceExpression)
 
 (s/def ::Allele
   (s/keys :opt-un [::_id]
-          :req-un [::state ::type :vrs.spec.allele/location]))
+          :req-un [::state ::type #_ :vrs.spec.allele/location]))
 
-(s/def ::haplotype-member (s/or ::allele ::Allele
-                                ::curie ::curie))
+(s/def ::haplotype-member
+  (s/or ::allele ::Allele
+        ::curie  ::curie))
+
 (s/def ::members (s/coll-of ::haplotype-member))
 
 (s/def ::Haplotype
@@ -163,25 +188,26 @@
           :req-un [::type ::members]))
 
 (s/def ::molecular-variation
-  (s/or ::allele ::Allele
+  (s/or ::allele    ::Allele
         ::haplotype ::Haplotype))
 
-(s/def ::gene_id ::curie)
+(s/def ::gene_id ::string)
+
 (s/def ::Gene
   (s/keys :req-un [::type ::gene_id]))
 
 (s/def ::feature ::Gene)
 
 (s/def ::copies
-  (s/or ::number ::Number
-           ::indefinite-range ::IndefiniteRange
-           ::definite-range ::DefiniteRange))
+  (s/or ::definite-range   ::DefiniteRange
+        ::indefinite-range ::IndefiniteRange
+        ::number           ::Number))
 
 (s/def ::subject
-  (s/or ::curie ::curie
-           ::feature ::feature
-           ::sequence-expression ::SequenceExpression
-           ::molecular-variation ::molecular-variation))
+  (s/or ::curie               ::curie
+        ::feature             ::feature
+        ::molecular-variation ::molecular-variation
+        ::sequence-expression ::SequenceExpression))
 
 (s/def ::CopyNumber
   (s/keys :req-un [::_id ::type ::subject ::copies]))
@@ -194,7 +220,7 @@
 (s/def ::ChromosomeLocation
   (s/keys :req-un [::chr ::type]))
 
-(s/def ::definition string?)
+(s/def ::definition ::string)
 
 (s/def ::Text
   (s/keys :req_un [::_id ::type ::definition]))
@@ -202,17 +228,17 @@
 (s/def ::systemic-variation ::CopyNumber)
 
 (s/def ::utility-variation
-  (s/or ::text ::Text
-           ::variation-set ::VariationSet))
+  (s/or ::text          ::Text
+        ::variation-set ::VariationSet))
 
 (s/def ::variation
   (s/or ::molecular-variation ::molecular-variation
-           ::systemic-variation ::systemic-variation
-           ::utility-variation ::utility-variation))
+        ::systemic-variation  ::systemic-variation
+        ::utility-variation   ::utility-variation))
 
 (s/def ::member
-  (s/or ::curie ::curie
-           ::variation ::variation))
+  (s/or ::curie     ::curie
+        ::variation ::variation))
 
 (s/def ::members
   (s/coll-of ::member))
@@ -231,9 +257,7 @@
 (s/def ::CytobandInterval
   (s/keys :req-un [::type ::start ::end]))
 
-(def ^:private the-namespace-name
-  "The name of this namespace as a string."
-  (name (ns-name *ns*)))
-
-(defn valid? [o]
+(defn valid?
+  "True when the VRS object O is valid according to spec."
+  [o]
   (s/valid? (keyword the-namespace-name (:type o)) o))

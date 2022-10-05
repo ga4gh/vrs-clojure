@@ -2,25 +2,21 @@
   "Digest a VRS according to this specification.
   https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html"
   (:require [clojure.data.json :as json]
-            [clojure.pprint    :refer [pprint]]
             [clojure.walk      :as walk]
             [clj-yaml.core     :as yaml])
   (:import [clojure.lang Keyword]
            [java.security MessageDigest]
-           [java.util Arrays Base64 Base64$Encoder]))
+           [java.util Arrays Base64]))
 
-(-> (java.util.Base64/getUrlEncoder)
-    class
-    (. getDeclaredField "toBase64URL"))
-
-(-> (java.util.Base64/getUrlEncoder)
-    clojure.reflect/reflect
-    :members
-    (->> (filter #(= 'toBase64URL (:name %)))))
-
-#_java.util.Base64$Encoder/toBase64URL
-
-;; => #object[java.lang.reflect.Field 0x44c125c7 "private static final char[] java.util.Base64$Encoder.toBase64URL"]
+(defmacro trace
+  "Like DUMP but map location metadata."
+  [expression]
+  (let [{:keys [line column]} (meta &form)]
+    `(let [x# ~expression]
+       (do
+         (clojure.pprint/pprint
+          {:column ~column :file ~*file* :line ~line '~expression x#})
+         x#))))
 
 (def ^:private haplotype
   {:_id "TODO:replacewithvrsid"
@@ -48,15 +44,6 @@
      :state {:sequence "C" :type "LiteralSequenceExpression"}
      :type "Allele"}]
    :type "Haplotype"})
-
-(defmacro trace
-  "Like DUMP but map location metadata."
-  [expression]
-  (let [{:keys [line column]} (meta &form)]
-    `(let [x# ~expression]
-       (do
-         (pprint {:column ~column :file ~*file* :line ~line '~expression x#})
-         x#))))
 
 (def digestible
   "Map a digestible type to an identifier prefix as a keyword."
@@ -151,7 +138,7 @@
                                    (->> (str "ga4gh" prefix \.)
                                         (assoc thing :_id)))
           (indigestible? type) thing
-          (map? thing)         (dump thing)
+          (map? thing)         (trace thing)
           :else                thing)))
 
 ;; https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html#identify
