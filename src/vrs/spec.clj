@@ -1,7 +1,7 @@
 (ns vrs.spec
   "Clojure spec implementation of VRS data model
   https://vrs.ga4gh.org/en/stable/terms_and_model.html"
-  (:require [clojure.spec.alpha :as spec]))
+  (:require [clojure.spec.alpha :as s]))
 
 ;; https://en.wikipedia.org/wiki/International_Union_of_Pure_and_Applied_Chemistry#Amino_acid_and_nucleotide_base_codes
 
@@ -57,79 +57,79 @@
    :* "Translation stop"
    :- "Gap"})
 
-(spec/def ::string (spec/and string? seq))
+(s/def ::string (s/and string? seq))
 
-(spec/def ::curie string?) ; Should be a regex matching a curie
+(s/def ::curie string?) ; Should be a regex matching a curie
 
-(spec/def ::human-cytoband
+(s/def ::human-cytoband
   #(re-matches #"^cen|[pq](ter|([1-9][0-9]*(\.[1-9][0-9]*)?))$" %))
 
-(spec/def ::residue
+(s/def ::residue
   (-> (concat aminos nucleics)
       keys set
       (->> (map (comp first name)))))
 
-(spec/def ::sequence #(re-matches #"^[A-Z*\-]*$" %))
+(s/def ::sequence #(re-matches #"^[A-Z*\-]*$" %))
 
-(spec/def ::type string?) ; Consider limiting to valid vrs types
-(spec/def ::value int?)   ; Consider limiting to valid vrs types
+(s/def ::type string?) ; Consider limiting to valid vrs types
+(s/def ::value int?)   ; Consider limiting to valid vrs types
 
-(spec/def ::Number (spec/keys :req-un [::type ::value]))
+(s/def ::Number (s/keys :req-un [::type ::value]))
 
-(comment (spec/valid? ::Number {:type "Number" :value 3}))
+(comment (s/valid? ::Number {:type "Number" :value 3}))
 
-(spec/def ::min nat-int?)
+(s/def ::min nat-int?)
 
-(spec/def ::max nat-int?)
+(s/def ::max nat-int?)
 
-(spec/def ::DefiniteRange
-  (spec/keys :req-un [::max ::min ::type]))
+(s/def ::DefiniteRange
+  (s/keys :req-un [::max ::min ::type]))
 
 (comment
-  (spec/valid? ::DefiniteRange
+  (s/valid? ::DefiniteRange
                {:type "DefiniteRange"
                 :min {:type "Number" :value 3}
                 :max {:type "Number" :value 5}}))
 
-(spec/def ::comparator #{"<=" ">="})
-(spec/def ::IndefiniteRange (spec/keys :req-un [::comparator ::type ::value]))
+(s/def ::comparator #{"<=" ">="})
+(s/def ::IndefiniteRange (s/keys :req-un [::comparator ::type ::value]))
 
 (comment
-  (spec/valid? ::IndefiniteRange
+  (s/valid? ::IndefiniteRange
                {:type "IndefiniteRange"
                 :comparator "<="
                 :value 22}))
 
-(spec/def ::LiteralSequenceExpression
-  (spec/keys :req-un [::sequence ::type]))
+(s/def ::LiteralSequenceExpression
+  (s/keys :req-un [::sequence ::type]))
 
 (comment
-  (spec/valid? ::LiteralSequenceExpression
+  (s/valid? ::LiteralSequenceExpression
                {:sequence "ACGT"
                 :type "LiteralSequenceExpression"}))
 
-(spec/def ::SequenceInterval
-  (spec/keys :req-un [::type ::start ::end]))
+(s/def ::SequenceInterval
+  (s/keys :req-un [::type ::start ::end]))
 
 (comment
-  (spec/valid? ::SequenceInterval
+  (s/valid? ::SequenceInterval
                {:type "SequenceInterval"
                 :start {:type "Number" :value 44908821}
                 :end {:type "Number" :value 44908822}}))
 
 ;; TODO implememnt simple interval eventually...
-(spec/def ::interval ::SequenceInterval)
+(s/def ::interval ::SequenceInterval)
 
-(spec/def ::_id string?)
+(s/def ::_id string?)
 
-(spec/def ::sequence_id string?)
+(s/def ::sequence_id string?)
 
-(spec/def ::SequenceLocation
-  (spec/keys :opt-un [::_id]
+(s/def ::SequenceLocation
+  (s/keys :opt-un [::_id]
              :req-un [::type ::sequence_id ::interval]))
 
 (comment
-  (spec/valid? ::SequenceLocation
+  (s/valid? ::SequenceLocation
                {:_id "TODO:replacewithvrsid"
                 :type "SequenceLocation"
                 :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
@@ -138,26 +138,26 @@
                            :end 44908822}}))
 
 ;; TODO, uncomment after sequence location
-(spec/def ::reverse_complement boolean?)
+(s/def ::reverse_complement boolean?)
 
-(spec/def ::location ::SequenceLocation)
+(s/def ::location ::SequenceLocation)
 
-(spec/def ::DerivedSequenceExpression
-  (spec/keys :req-un [#_::location ::reverse_complement ::type]))
+(s/def ::DerivedSequenceExpression
+  (s/keys :req-un [#_::location ::reverse_complement ::type]))
 
-(spec/def ::seq_expr
-  (spec/or ::derived-sequence-expression ::DerivedSequenceExpression
+(s/def ::seq_expr
+  (s/or ::derived-sequence-expression ::DerivedSequenceExpression
            ::literal-sequence-expression ::LiteralSequenceExpression))
 
-(spec/def ::count (spec/or ::definite-range   ::DefiniteRange
+(s/def ::count (s/or ::definite-range   ::DefiniteRange
                            ::indefinite-range ::IndefiniteRange
                            ::number           ::Number))
 
-(spec/def ::RepeatedSequenceExpression
-  (spec/keys :req-un [::count #_ ::seq_expr ::type]))
+(s/def ::RepeatedSequenceExpression
+  (s/keys :req-un [::count #_ ::seq_expr ::type]))
 
 (comment
-  (spec/valid? ::RepeatedSequenceExpression
+  (s/valid? ::RepeatedSequenceExpression
                {:count {:comparator ">=", :type "IndefiniteRange", :value 6},
                 :seq_expr
                 {:location
@@ -172,16 +172,16 @@
                  :type "DerivedSequenceExpression"},
                 :type "RepeatedSequenceExpression"}))
 
-(spec/def ::component
-  (spec/or ::literal-sequence-expression ::LiteralSequenceExpression
+(s/def ::component
+  (s/or ::literal-sequence-expression ::LiteralSequenceExpression
            ::repeated-sequence-expression ::RepeatedSequenceExpression
            ::derived-sequence-expression ::DerivedSequenceExpression))
-(spec/def ::components (spec/coll-of ::component))
-(spec/def ::ComposedSequenceExpression
-  (spec/keys :req-un [::type ::components]))
+(s/def ::components (s/coll-of ::component))
+(s/def ::ComposedSequenceExpression
+  (s/keys :req-un [::type ::components]))
 
 (comment
-  (spec/valid? ::ComposedSequenceExpression
+  (s/valid? ::ComposedSequenceExpression
                {:type "ComposedSequenceExpression",
                 :components
                 [{:type "RepeatedSequenceExpression",
@@ -197,23 +197,23 @@
                              :sequence "GCG"},
                   :count {:type "Number", :value 1}}]}))
 
-(spec/def ::SequenceExpression
-  (spec/or ::composed-sequence-expression ::ComposedSequenceExpression
+(s/def ::SequenceExpression
+  (s/or ::composed-sequence-expression ::ComposedSequenceExpression
            ::derived-sequence-expression ::DerivedSequenceExpression
            ::literal-sequence-expression ::LiteralSequenceExpression))
 
-(spec/def :vrs.spec.allele/location
-  (spec/or ::curie ::curie
+(s/def :vrs.spec.allele/location
+  (s/or ::curie ::curie
            ::location ::location))
 
-(spec/def ::state ::SequenceExpression)
+(s/def ::state ::SequenceExpression)
 
-(spec/def ::Allele
-  (spec/keys :opt-un [::_id]
+(s/def ::Allele
+  (s/keys :opt-un [::_id]
              :req-un [::state ::type :vrs.spec.allele/location]))
 
 (comment
-  (spec/valid? ::Allele
+  (s/valid? ::Allele
                {:_id "TODO:replacewithvrsid"
                 :location
                 {:interval
@@ -226,16 +226,16 @@
                 :state {:sequence "T", :type "SequenceState"},
                 :type "Allele"}))
 
-(spec/def ::haplotype-member (spec/or ::allele ::Allele
+(s/def ::haplotype-member (s/or ::allele ::Allele
                                       ::curie ::curie))
-(spec/def ::members (spec/coll-of ::haplotype-member))
+(s/def ::members (s/coll-of ::haplotype-member))
 
-(spec/def ::Haplotype
-  (spec/keys :opt-un [::_id]
+(s/def ::Haplotype
+  (s/keys :opt-un [::_id]
              :req-un [::type ::members]))
 
 (comment
-  (spec/valid? ::Haplotype
+  (s/valid? ::Haplotype
                {:_id "TODO:replacewithvrsid"
                 :members
                 [{:_id "TODO:replacewithvrsid"
@@ -262,46 +262,46 @@
                   :type "Allele"}],
                 :type "Haplotype"})
 
-  (spec/valid? ::Haplotype
+  (s/valid? ::Haplotype
                {:_id "TODO:replacewithvrsid"
                 :members
                 ["ga4gh:VA.-kUJh47Pu24Y3Wdsk1rXEDKsXWNY-68x"
                  "ga4gh:VA.Z_rYRxpUvwqCLsCBO3YLl70o2uf9_Op1"]
                 :type "Haplotype"}))
-(spec/def ::molecular-variation
-  (spec/or ::allele ::Allele
+(s/def ::molecular-variation
+  (s/or ::allele ::Allele
            ::haplotype ::Haplotype))
 
-(spec/def ::gene_id ::curie)
-(spec/def ::Gene
-  (spec/keys :req-un [::type ::gene_id]))
+(s/def ::gene_id ::curie)
+(s/def ::Gene
+  (s/keys :req-un [::type ::gene_id]))
 
-(spec/def ::feature ::Gene)
+(s/def ::feature ::Gene)
 
-(spec/def ::copies
-  (spec/or ::number ::Number
+(s/def ::copies
+  (s/or ::number ::Number
            ::indefinite-range ::IndefiniteRange
            ::definite-range ::DefiniteRange))
 
-(spec/def ::subject
-  (spec/or ::curie ::curie
+(s/def ::subject
+  (s/or ::curie ::curie
            ::feature ::feature
            ::sequence-expression ::SequenceExpression
            ::molecular-variation ::molecular-variation))
 
-(spec/def ::CopyNumber
-  (spec/keys :req-un [::_id ::type ::subject ::copies]))
+(s/def ::CopyNumber
+  (s/keys :req-un [::_id ::type ::subject ::copies]))
 
-(spec/def ::RelativeCopyNumber
-  (spec/keys :req-un [::type]))
+(s/def ::RelativeCopyNumber
+  (s/keys :req-un [::type]))
 
-(spec/def ::chr ::string)
+(s/def ::chr ::string)
 
-(spec/def ::ChromosomeLocation
-  (spec/keys :req-un [::chr ::type]))
+(s/def ::ChromosomeLocation
+  (s/keys :req-un [::chr ::type]))
 
 (comment
-  (spec/valid?
+  (s/valid?
    ::CopyNumber
    {:_id "TODO:replacewithvrsid"
     :copies
@@ -313,69 +313,69 @@
      :type "Gene"}
     :type "CopyNumber"}))
 
-(spec/def ::definition string?)
+(s/def ::definition string?)
 
-(spec/def ::Text
-  (spec/keys :req_un [::_id ::type ::definition]))
+(s/def ::Text
+  (s/keys :req_un [::_id ::type ::definition]))
 
-(spec/def ::systemic-variation ::CopyNumber)
+(s/def ::systemic-variation ::CopyNumber)
 
-(spec/def ::utility-variation
-  (spec/or ::text ::Text
+(s/def ::utility-variation
+  (s/or ::text ::Text
            ::variation-set ::VariationSet))
 
-(spec/def ::variation
-  (spec/or ::molecular-variation ::molecular-variation
+(s/def ::variation
+  (s/or ::molecular-variation ::molecular-variation
            ::systemic-variation ::systemic-variation
            ::utility-variation ::utility-variation))
 
-(spec/def ::member
-  (spec/or ::curie ::curie
+(s/def ::member
+  (s/or ::curie ::curie
            ::variation ::variation))
 
-(spec/def ::members
-  (spec/coll-of ::member))
+(s/def ::members
+  (s/coll-of ::member))
 
-(spec/def ::VariationSet
-  (spec/keys :req_un [::_id ::type ::members]))
+(s/def ::VariationSet
+  (s/keys :req_un [::_id ::type ::members]))
 
 (comment
-  (spec/valid? ::VariationSet
-               {:members
-                [{:location
-                  {:interval
-                   {:end {:type "Number", :value 44908822},
-                    :start {:type "Number", :value 44908821},
-                    :type "SequenceInterval"},
-                   :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-                   :type "SequenceLocation"},
-                  :state {:sequence "C", :type "LiteralSequenceExpression"},
-                  :type "Allele"}
-                 {:location
-                  {:interval
-                   {:end {:type "Number", :value 44908684},
-                    :start {:type "Number", :value 44908683},
-                    :type "SequenceInterval"},
-                   :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-                   :type "SequenceLocation"},
-                  :state {:sequence "C", :type "LiteralSequenceExpression"},
-                  :type "Allele"}],
-                :type "VariationSet"}))
+  (s/valid? ::VariationSet
+            {:members
+             [{:location
+               {:interval
+                {:end {:type "Number", :value 44908822},
+                 :start {:type "Number", :value 44908821},
+                 :type "SequenceInterval"},
+                :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
+                :type "SequenceLocation"},
+               :state {:sequence "C", :type "LiteralSequenceExpression"},
+               :type "Allele"}
+              {:location
+               {:interval
+                {:end {:type "Number", :value 44908684},
+                 :start {:type "Number", :value 44908683},
+                 :type "SequenceInterval"},
+                :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
+                :type "SequenceLocation"},
+               :state {:sequence "C", :type "LiteralSequenceExpression"},
+               :type "Allele"}],
+             :type "VariationSet"}))
 
-(spec/def ::AbsoluteCopyNumber
-  (spec/keys :opt-un [::_id]
-             :req-un [::type ::subject ::copies]))
+(s/def ::AbsoluteCopyNumber
+  (s/keys :opt-un [::_id]
+          :req-un [::type ::subject ::copies]))
 
-(spec/def ::SimpleInterval
-  (spec/keys :opt-un [::_id]
-             :req-un [::type ::start ::end]))
+(s/def ::SimpleInterval
+  (s/keys :opt-un [::_id]
+          :req-un [::type ::start ::end]))
 
-(spec/def ::CytobandInterval
-  (spec/keys :req-un [::type ::start ::end]))
+(s/def ::CytobandInterval
+  (s/keys :req-un [::type ::start ::end]))
 
 (def ^:private the-namespace-name
   "The name of this namespace as a string."
   (name (ns-name *ns*)))
 
 (defn valid? [o]
-  (spec/valid? (keyword the-namespace-name (:type o)) o))
+  (s/valid? (keyword the-namespace-name (:type o)) o))
