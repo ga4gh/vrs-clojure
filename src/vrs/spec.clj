@@ -329,15 +329,15 @@
            ::systemic-variation ::systemic-variation
            ::utility-variation ::utility-variation))
 
-(spec/def :vrs.spec/member
+(spec/def ::member
   (spec/or ::curie ::curie
            ::variation ::variation))
 
-(spec/def :vrs.spec/members
-  (spec/coll-of :vrs.spec/member))
+(spec/def ::members
+  (spec/coll-of ::member))
 
 (spec/def ::VariationSet
-  (spec/keys :req_un [::_id ::type :vrs.spec/members]))
+  (spec/keys :req_un [::_id ::type ::members]))
 
 (comment
   (spec/valid? ::VariationSet
