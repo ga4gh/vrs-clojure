@@ -98,21 +98,20 @@
 
 (s/def ::string (s/and string? seq))
 
-(s/def ::curie curie?)
-#_(s/def ::curie (constantly true))
+(s/def ::CURIE curie?)
 
 (s/def ::sequence (partial re-matches sequence-regex))
 
-(s/def ::type ::string)         ; Consider limiting to valid vrs types
+(s/def ::type digest/type?)
 
 (s/def ::value int?)            ; Consider limiting to valid vrs types
+
+(s/def ::comparator #{"<=" ">="})
 
 (s/def ::Number (s/keys :req-un [::type ::value]))
 
 (s/def ::DefiniteRange
   (s/keys :req-un [::max ::min ::type]))
-
-(s/def ::comparator #{"<=" ">="})
 
 (s/def ::IndefiniteRange
   (s/keys :req-un [::comparator ::type ::value]))
@@ -125,7 +124,7 @@
 
 (s/def ::interval ::SequenceInterval)
 
-(s/def ::_id ::curie)
+(s/def ::_id ::CURIE)
 
 (s/def ::sequence_id ::string)
 
@@ -169,7 +168,7 @@
         ::literal-sequence-expression  ::LiteralSequenceExpression))
 
 (s/def :vrs.spec.allele/location
-  (s/or ::curie    ::curie
+  (s/or ::curie    ::CURIE
         ::location ::location))
 
 (s/def ::state ::SequenceExpression)
@@ -180,7 +179,7 @@
 
 (s/def ::haplotype-member
   (s/or ::allele ::Allele
-        ::curie  ::curie))
+        ::curie  ::CURIE))
 
 (s/def ::members (s/coll-of ::haplotype-member))
 
@@ -205,7 +204,7 @@
         ::number           ::Number))
 
 (s/def ::subject
-  (s/or ::curie               ::curie
+  (s/or ::curie               ::CURIE
         ::feature             ::feature
         ::molecular-variation ::molecular-variation
         ::sequence-expression ::SequenceExpression))
@@ -238,7 +237,7 @@
         ::utility-variation   ::utility-variation))
 
 (s/def ::member
-  (s/or ::curie     ::curie
+  (s/or ::curie     ::CURIE
         ::variation ::variation))
 
 (s/def ::members

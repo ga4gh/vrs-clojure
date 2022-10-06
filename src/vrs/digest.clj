@@ -57,7 +57,6 @@
    "Text"               :VT
    "VariationSet"       :VS})
 
-
 (def indigestible?
   "Set of the types that cannot be digested."
   #{"CURIE"
@@ -76,11 +75,19 @@
     "Sequence"
     "SequenceInterval"})
 
-(def obsolete
+(def obsolete?
   "Other now obsolete indigestible types."
-  #{"SequenceState"
+  #{"AbsoluteCopyNumber"
+    "IndefiniteRange"
+    "RelativeCopyNumber"
+    "SequenceState"
     "SimpleInterval"
     "State"})
+
+(def type?
+  (-> obsolete?
+      (into indigestible?)
+      (into (keys digestible))))
 
 (def allele
   "An example Allele VRS from the spec."
