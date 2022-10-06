@@ -233,7 +233,8 @@
         ::curie  ::CURIE))
 
 (s/def :vrs.spec.haplotype/members
-  (s/coll-of ::haplotype-member))
+  (s/and seq
+         (s/coll-of ::haplotype-member)))
 
 (s/def ::Haplotype
   (s/keys :opt-un [::_id]
