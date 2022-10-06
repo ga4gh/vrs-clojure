@@ -57,6 +57,10 @@
    "Text"               :VT
    "VariationSet"       :VS})
 
+(def digestible?
+  "Set of the types that can be digested."
+  (set (keys digestible)))
+
 (def indigestible?
   "Set of the types that cannot be digested."
   #{"CURIE"

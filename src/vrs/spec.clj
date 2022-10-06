@@ -127,11 +127,17 @@
 
 (s/def ::sequence_id ::string)
 
+(s/def ::species_id ::string)
+
 (s/def ::CURIE curie?)
 
 (s/def ::sequence sequence?)
 
 (s/def ::type digest/type?)
+
+;; I don't know what this is.
+;;
+(s/def ::Abundance (constantly false))
 
 (s/def ::LiteralSequenceExpression
   (s/keys :req-un [::sequence ::type]))
@@ -179,7 +185,9 @@
 (s/def ::SequenceInterval
   (s/keys :req-un [::type :vrs.spec.sequence/end :vrs.spec.sequence/start]))
 
-(s/def ::interval ::SequenceInterval)
+(s/def ::interval
+  (s/or ::cytoband-interval ::CytobandInterval
+        ::sequence-interval ::SequenceInterval))
 
 (s/def ::SequenceLocation
   (s/keys :opt-un [::_id]
@@ -256,7 +264,7 @@
   (s/keys :req-un [::relative_copy_class ::subject ::type]))
 
 (s/def ::ChromosomeLocation
-  (s/keys :req-un [::chr ::type]))
+  (s/keys :req-un [::chr ::interval ::species_id ::type]))
 
 (s/def ::Text
   (s/keys :opt-un [::_id]
