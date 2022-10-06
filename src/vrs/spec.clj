@@ -232,11 +232,12 @@
   (s/or ::allele ::Allele
         ::curie  ::CURIE))
 
-(s/def ::members (s/coll-of ::haplotype-member))
+(s/def :vrs.spec.haplotype/members
+  (s/coll-of ::haplotype-member))
 
 (s/def ::Haplotype
   (s/keys :opt-un [::_id]
-          :req-un [::type ::members]))
+          :req-un [::type :vrs.spec.haplotype/members]))
 
 (s/def ::molecular-variation
   (s/or ::allele    ::Allele
@@ -279,15 +280,16 @@
         ::systemic-variation  ::systemic-variation
         ::utility-variation   ::utility-variation))
 
-(s/def ::member
+(s/def ::variation-member
   (s/or ::curie     ::CURIE
         ::variation ::variation))
 
-(s/def ::members (s/coll-of ::member))
+(s/def :vrs.spec.variation/members
+  (s/coll-of ::variation-member))
 
 (s/def ::VariationSet
   (s/keys :opt-un [::_id]
-          :req-un [::members ::type]))
+          :req-un [::type :vrs.spec.variation/members]))
 
 (s/def ::AbsoluteCopyNumber
   (s/keys :opt-un [::_id]
