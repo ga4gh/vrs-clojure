@@ -3,11 +3,12 @@
   (:require [clojure.test    :refer [deftest is testing]]
             [clojure.edn     :as edn]
             [clojure.java.io :as io]
+            [clj-yaml.core   :as yaml]
             [vrs.spec        :as spec]))
 
 (def model-objects
   "A seq of seqs of verified VRS objects."
-  (-> "models.edn" io/resource slurp edn/read-string))
+  (-> "models.yaml" io/resource slurp yaml/parse-string))
 
 (deftest spec-test
   (testing "testing validation of model objects"

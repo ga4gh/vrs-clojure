@@ -98,7 +98,19 @@
 
 (s/def ::string (s/and string? seq))
 
+(s/def ::chr ::string)
+
+(s/def ::definition ::string)
+
+(s/def ::gene_id ::string)
+
+(s/def ::relative_copy_class ::string)
+
+(s/def ::sequence_id ::string)
+
 (s/def ::CURIE curie?)
+
+(s/def ::_id ::CURIE)
 
 (s/def ::sequence (partial re-matches sequence-regex))
 
@@ -116,6 +128,11 @@
 (s/def ::IndefiniteRange
   (s/keys :req-un [::comparator ::type ::value]))
 
+(s/def ::count
+  (s/or ::definite-range   ::DefiniteRange
+        ::indefinite-range ::IndefiniteRange
+        ::number           ::Number))
+
 (s/def ::LiteralSequenceExpression
   (s/keys :req-un [::sequence ::type]))
 
@@ -124,17 +141,17 @@
 
 (s/def ::interval ::SequenceInterval)
 
-(s/def ::_id ::CURIE)
-
-(s/def ::sequence_id ::string)
-
 (s/def ::SequenceLocation
   (s/keys :opt-un [::_id]
           :req-un [::interval ::sequence_id ::type]))
 
-(s/def ::reverse_complement boolean?)
-
 (s/def ::location ::SequenceLocation)
+
+(s/def :vrs.spec.allele/location
+  (s/or ::curie    ::CURIE
+        ::location ::location))
+
+(s/def ::reverse_complement boolean?)
 
 (s/def ::DerivedSequenceExpression
   (s/keys :req-un [::location ::reverse_complement ::type]))
@@ -142,11 +159,6 @@
 (s/def ::seq_expr
   (s/or ::derived-sequence-expression ::DerivedSequenceExpression
         ::literal-sequence-expression ::LiteralSequenceExpression))
-
-(s/def ::count
-  (s/or ::definite-range   ::DefiniteRange
-        ::indefinite-range ::IndefiniteRange
-        ::number           ::Number))
 
 (s/def ::RepeatedSequenceExpression
   (s/keys :req-un [::count ::seq_expr ::type]))
@@ -159,16 +171,12 @@
 (s/def ::components (s/coll-of ::component))
 
 (s/def ::ComposedSequenceExpression
-  (s/keys :req-un [::type ::components]))
+  (s/keys :req-un [::components ::type]))
 
 (s/def ::SequenceExpression
   (s/or ::composed-sequence-expression ::ComposedSequenceExpression
         ::derived-sequence-expression  ::DerivedSequenceExpression
         ::literal-sequence-expression  ::LiteralSequenceExpression))
-
-(s/def :vrs.spec.allele/location
-  (s/or ::curie    ::CURIE
-        ::location ::location))
 
 (s/def ::state ::SequenceExpression)
 
@@ -190,10 +198,8 @@
   (s/or ::allele    ::Allele
         ::haplotype ::Haplotype))
 
-(s/def ::gene_id ::string)
-
 (s/def ::Gene
-  (s/keys :req-un [::type ::gene_id]))
+  (s/keys :req-un [::gene_id ::type]))
 
 (s/def ::feature ::Gene)
 
@@ -208,18 +214,11 @@
         ::molecular-variation ::molecular-variation
         ::sequence-expression ::SequenceExpression))
 
-(s/def ::CopyNumber
-  (s/keys :req-un [::_id ::type ::subject ::copies]))
-
 (s/def ::RelativeCopyNumber
-  (s/keys :req-un [::type]))
-
-(s/def ::chr ::string)
+  (s/keys :req-un [::relative_copy_class ::subject ::type]))
 
 (s/def ::ChromosomeLocation
   (s/keys :req-un [::chr ::type]))
-
-(s/def ::definition ::string)
 
 (s/def ::Text
   (s/keys :opt-un [::_id]
