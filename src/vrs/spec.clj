@@ -5,11 +5,11 @@
             [clojure.string     :as str]
             [vrs.digest         :as digest]))
 
-;; https://en.wikipedia.org/wiki/International_Union_of_Pure_and_Applied_Chemistry#Amino_acid_and_nucleotide_base_codes
-
 (def ^:private the-namespace-name
   "The name of this namespace as a string for `valid?` below."
   (name (ns-name *ns*)))
+
+;; https://en.wikipedia.org/wiki/International_Union_of_Pure_and_Applied_Chemistry#Amino_acid_and_nucleotide_base_codes
 
 (def nucleics
   "The IUPAC nucleic acid codes."
@@ -81,7 +81,7 @@
         hash-size       24
         hash-group      (str "(" url-safe-base64 "{" hash-size "})")]
     (-> digest/digestible vals
-        (->> (map name) sort (interpose "|") (apply str))
+        (->> (map name) sort (interpose "|") (apply str)) ; type
         (interpose [(str "^" ga4gh ":(") (str ")\\." hash-group "$")])
         (->> (apply str))
         re-pattern)))
@@ -104,7 +104,7 @@
 
 (s/def ::type digest/type?)
 
-(s/def ::value int?)            ; Consider limiting to valid vrs types
+(s/def ::value int?)
 
 (s/def ::comparator #{"<=" ">="})
 
@@ -130,7 +130,7 @@
 
 (s/def ::SequenceLocation
   (s/keys :opt-un [::_id]
-          :req-un [::type ::sequence_id ::interval]))
+          :req-un [::interval ::sequence_id ::type]))
 
 ;; TODO, uncomment after sequence location
 (s/def ::reverse_complement boolean?)
@@ -138,7 +138,7 @@
 (s/def ::location ::SequenceLocation)
 
 (s/def ::DerivedSequenceExpression
-  (s/keys :req-un [#_::location ::reverse_complement ::type]))
+  (s/keys :req-un [::location ::reverse_complement ::type]))
 
 (s/def ::seq_expr
   (s/or ::derived-sequence-expression ::DerivedSequenceExpression
@@ -150,7 +150,7 @@
         ::number           ::Number))
 
 (s/def ::RepeatedSequenceExpression
-  (s/keys :req-un [::count #_ ::seq_expr ::type]))
+  (s/keys :req-un [::count ::seq_expr ::type]))
 
 (s/def ::component
   (s/or ::derived-sequence-expression  ::DerivedSequenceExpression
@@ -175,7 +175,7 @@
 
 (s/def ::Allele
   (s/keys :opt-un [::_id]
-          :req-un [::state ::type #_ :vrs.spec.allele/location]))
+          :req-un [::state ::type :vrs.spec.allele/location]))
 
 (s/def ::haplotype-member
   (s/or ::allele ::Allele
