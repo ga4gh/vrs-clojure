@@ -65,9 +65,10 @@
 (def digestible
   "Map a digestible type to an identifier prefix as a keyword."
   {"AbsoluteCopyNumber" :VAC
+   "Abundance"          :VAB            ; not in validation suite
    "Allele"             :VA
    "ChromosomeLocation" :VCL
-   "CopyNumber"         :VCN
+   "CopyNumber"         :VCN            ; not in validation suite
    "Haplotype"          :VH
    "SequenceLocation"   :VSL
    "Text"               :VT
@@ -80,31 +81,22 @@
 (def indigestible?
   "Set of the types that cannot be digested."
   #{"CURIE"
-    "CompositeSequenceExpression"
     "CytobandInterval"
     "DefiniteRange"
     "DerivedSequenceExpression"
     "Gene"
-    "HumanCytoband"
     "IndefiniteRange"
     "LiteralSequenceExpression"
     "Number"
     "RepeatedSequenceExpression"
-    "Residue"
-    "Sequence"
     "SequenceInterval"})
 
 (def obsolete?
-  "Other now obsolete indigestible types."
+  "Obsolete types that still show up in validation suites."
   #{"AbsoluteCopyNumber"
-    "Abundance"                         ; :VAB not anymore ...
-    "Genotype"                          ; :VGT not anymore ...
-    "GenotypeMember"
-    "IndefiniteRange"
     "RelativeCopyNumber"
     "SequenceState"
-    "SimpleInterval"
-    "State"})
+    "SimpleInterval"})
 
 (def type?
   "The set of all type names -- even obsolete ones."
