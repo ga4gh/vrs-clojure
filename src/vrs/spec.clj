@@ -135,10 +135,6 @@
 
 (s/def ::type digest/type?)
 
-;; I don't know what this is.
-;;
-(s/def ::Abundance (constantly false))
-
 (s/def ::LiteralSequenceExpression
   (s/keys :req-un [::sequence ::type]))
 
@@ -166,6 +162,8 @@
 
 (s/def :vrs.spec.simple/end     nat-int?)
 (s/def :vrs.spec.simple/start   nat-int?)
+
+(s/def ::copies ::range)
 
 (s/def ::CytobandInterval
   (s/keys :req-un [::type :vrs.spec.iscn/end :vrs.spec.iscn/start]))
@@ -249,11 +247,6 @@
 
 (s/def ::feature ::Gene)
 
-(s/def ::copies
-  (s/or ::definite-range   ::DefiniteRange
-        ::indefinite-range ::IndefiniteRange
-        ::number           ::Number))
-
 (s/def ::subject
   (s/or ::curie               ::CURIE
         ::feature             ::feature
@@ -263,8 +256,13 @@
 (s/def ::RelativeCopyNumber
   (s/keys :req-un [::relative_copy_class ::subject ::type]))
 
+(s/def ::CopyNumber
+  (s/keys :opt-un [::_id]
+          :req-un [::copies ::subject ::type]))
+
 (s/def ::ChromosomeLocation
-  (s/keys :req-un [::chr ::interval ::species_id ::type]))
+  (s/keys :opt-un [::_id]
+          :req-un [::chr ::interval ::species_id ::type]))
 
 (s/def ::Text
   (s/keys :opt-un [::_id]
