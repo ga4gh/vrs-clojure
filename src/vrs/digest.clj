@@ -114,7 +114,7 @@
           :else                thing)))
 
 ;; https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html#identify
-
+;;
 (defn identify
   "Digest a VRS object."
   [vrs]
