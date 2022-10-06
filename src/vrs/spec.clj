@@ -132,7 +132,6 @@
   (s/keys :opt-un [::_id]
           :req-un [::interval ::sequence_id ::type]))
 
-;; TODO, uncomment after sequence location
 (s/def ::reverse_complement boolean?)
 
 (s/def ::location ::SequenceLocation)
@@ -223,7 +222,8 @@
 (s/def ::definition ::string)
 
 (s/def ::Text
-  (s/keys :req_un [::_id ::type ::definition]))
+  (s/keys :opt-un [::_id]
+          :req-un [::definition ::type]))
 
 (s/def ::systemic-variation ::CopyNumber)
 
@@ -244,7 +244,8 @@
   (s/coll-of ::member))
 
 (s/def ::VariationSet
-  (s/keys :req_un [::_id ::type ::members]))
+  (s/keys :opt-un [::_id]
+          :req-un [::type ::members]))
 
 (s/def ::AbsoluteCopyNumber
   (s/keys :opt-un [::_id]
