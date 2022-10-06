@@ -20,7 +20,8 @@
 
 (def digestible
   "Map a digestible type to an identifier prefix as a keyword."
-  {"Allele"             :VA
+  {"AbsoluteCopyNumber" :VAC
+   "Allele"             :VA
    "ChromosomeLocation" :VCL
    "CopyNumber"         :VCN
    "Haplotype"          :VH
