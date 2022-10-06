@@ -5,6 +5,16 @@
             [clojure.string     :as str]
             [vrs.digest         :as digest]))
 
+(defmacro trace
+  "Like DUMP but map location metadata."
+  [expression]
+  (let [{:keys [line column]} (meta &form)]
+    `(let [x# ~expression]
+       (do
+         (clojure.pprint/pprint
+          {:column ~column :file ~*file* :line ~line '~expression x#})
+         x#))))
+
 ;; https://en.wikipedia.org/wiki/International_Union_of_Pure_and_Applied_Chemistry#Amino_acid_and_nucleotide_base_codes
 
 (def ^:private the-namespace-name
@@ -76,19 +86,20 @@
 ;;
 (def curie-regex
   "Match a CURIE to 3 groups: 'ga4gh':'type'.'digest'."
-  (-> digest/digestible vals
-      (->> (map name)
-           sort
-           (interpose "|")
-           (apply str))
-      (interpose ["^(ga4gh):(" ")\\.([a-zA-Z_-]{24})$"])
-      (->> (apply str))
-      re-pattern))
+  (let [ga4gh           "(ga4gh)"
+        url-safe-base64 "[a-zA-Z_-]"
+        hash-size       24
+        hash-group      (str "(" url-safe-base64 "{" hash-size "})")]
+    (-> digest/digestible vals
+        (->> (map name) sort (interpose "|") (apply str))
+        (interpose [(str "^" ga4gh ":(") (str ")\\." hash-group "$")])
+        (->> (apply str))
+        re-pattern)))
 
 (defn curie?
-  "True when O is a CURIE."
-  [o]
-  (try (re-matches curie-regex o)
+  "True when OBJECT is a CURIE."
+  [object]
+  (try (re-matches curie-regex object)
        (catch Throwable _)))
 
 (s/def ::min nat-int?)
@@ -260,4 +271,5 @@
 (defn valid?
   "True when the VRS object O is valid according to spec."
   [o]
+  (trace o)
   (s/valid? (keyword the-namespace-name (:type o)) o))
