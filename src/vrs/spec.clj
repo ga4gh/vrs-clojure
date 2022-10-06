@@ -2,8 +2,7 @@
   "Clojure spec implementation of VRS data model
   https://vrs.ga4gh.org/en/stable/terms_and_model.html"
   (:require [clojure.spec.alpha :as s]
-            [clojure.string     :as str]
-            [vrs.digest         :as digest]))
+            [clojure.string     :as str]))
 
 (def ^:private the-namespace-name
   "The name of this namespace as a string for `valid?` below."
@@ -63,6 +62,56 @@
    :* "Translation stop"
    :- "Gap"})
 
+(def digestible
+  "Map a digestible type to an identifier prefix as a keyword."
+  {"AbsoluteCopyNumber" :VAC
+   "Allele"             :VA
+   "ChromosomeLocation" :VCL
+   "CopyNumber"         :VCN
+   "Haplotype"          :VH
+   "SequenceLocation"   :VSL
+   "Text"               :VT
+   "VariationSet"       :VS})
+
+(def digestible?
+  "Set of the types that can be digested."
+  (-> digestible keys set))
+
+(def indigestible?
+  "Set of the types that cannot be digested."
+  #{"CURIE"
+    "CompositeSequenceExpression"
+    "CytobandInterval"
+    "DefiniteRange"
+    "DerivedSequenceExpression"
+    "Gene"
+    "HumanCytoband"
+    "IndefiniteRange"
+    "LiteralSequenceExpression"
+    "Number"
+    "RepeatedSequenceExpression"
+    "Residue"
+    "Sequence"
+    "SequenceInterval"})
+
+(def obsolete?
+  "Other now obsolete indigestible types."
+  #{"AbsoluteCopyNumber"
+    "Abundance"                         ; :VAB not anymore ...
+    "Genotype"                          ; :VGT not anymore ...
+    "GenotypeMember"
+    "IndefiniteRange"
+    "RelativeCopyNumber"
+    "SequenceState"
+    "SimpleInterval"
+    "State"})
+
+(def type?
+  "The set of all type names -- even obsolete ones."
+  (-> obsolete?
+      (into indigestible?)
+      (into digestible?)))
+
 (def sequence-regex
   "Match the characters in the aminos and nucleics keys."
   (-> (concat (keys aminos) (keys nucleics)) set
@@ -80,7 +129,7 @@
         url-safe-base64 "[a-zA-Z_-]"
         hash-size       24
         hash-group      (str "(" url-safe-base64 "{" hash-size "})")]
-    (-> digest/digestible vals
+    (-> digestible?
         (->> (map name) sort (interpose "|") (apply str)) ; type
         (interpose [(str "^" ga4gh ":(") (str ")\\." hash-group "$")])
         (->> (apply str))
@@ -133,7 +182,7 @@
 
 (s/def ::sequence sequence?)
 
-(s/def ::type digest/type?)
+(s/def ::type type?)
 
 (s/def ::LiteralSequenceExpression
   (s/keys :req-un [::sequence ::type]))

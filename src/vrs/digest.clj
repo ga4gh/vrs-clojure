@@ -3,70 +3,11 @@
   https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html"
   (:require [clojure.data.json :as json]
             [clojure.walk      :as walk]
-            [clj-yaml.core     :as yaml])
+            [clj-yaml.core     :as yaml]
+            [vrs.spec          :as spec])
   (:import [clojure.lang Keyword]
            [java.security MessageDigest]
            [java.util Arrays Base64]))
-
-(defmacro trace
-  "Like DUMP but map location metadata."
-  [expression]
-  (let [{:keys [line column]} (meta &form)]
-    `(let [x# ~expression]
-       (do
-         (clojure.pprint/pprint
-          {:column ~column :file ~*file* :line ~line '~expression x#})
-         x#))))
-
-(def digestible
-  "Map a digestible type to an identifier prefix as a keyword."
-  {"AbsoluteCopyNumber" :VAC
-   "Allele"             :VA
-   "ChromosomeLocation" :VCL
-   "CopyNumber"         :VCN
-   "Haplotype"          :VH
-   "SequenceLocation"   :VSL
-   "Text"               :VT
-   "VariationSet"       :VS})
-
-(def digestible?
-  "Set of the types that can be digested."
-  (-> digestible keys set))
-
-(def indigestible?
-  "Set of the types that cannot be digested."
-  #{"CURIE"
-    "CompositeSequenceExpression"
-    "CytobandInterval"
-    "DefiniteRange"
-    "DerivedSequenceExpression"
-    "Gene"
-    "HumanCytoband"
-    "IndefiniteRange"
-    "LiteralSequenceExpression"
-    "Number"
-    "RepeatedSequenceExpression"
-    "Residue"
-    "Sequence"
-    "SequenceInterval"})
-
-(def obsolete?
-  "Other now obsolete indigestible types."
-  #{"AbsoluteCopyNumber"
-    "Abundance"                         ; :VAB not anymore ...
-    "Genotype"                          ; :VGT not anymore ...
-    "GenotypeMember"
-    "IndefiniteRange"
-    "RelativeCopyNumber"
-    "SequenceState"
-    "SimpleInterval"
-    "State"})
-
-(def type?
-  "The set of all type names -- even obsolete ones."
-  (-> obsolete?
-      (into indigestible?)
-      (into digestible?)))
 
 (defn keyword->codepoint-seq
   "Return a codepoint (integer) iterator on the name of KW."
@@ -104,13 +45,13 @@
 (defn ^:private idify
   "Add an _ID field to THING mapped to its digest when digestible."
   [{:keys [type] :as thing}]
-  (let [prefix (digestible type)]
-    (cond (keyword? prefix)    (-> thing jsonify digest
-                                   (->> (str "ga4gh" prefix \.)
-                                        (assoc thing :_id)))
-          (indigestible? type) thing
-          (map? thing)         (trace thing)
-          :else                thing)))
+  (let [prefix (spec/digestible type)]
+    (cond (keyword? prefix)         (-> thing jsonify digest
+                                        (->> (str "ga4gh" prefix \.)
+                                             (assoc thing :_id)))
+          (spec/indigestible? type) thing
+          (map? thing)              (spec/trace thing)
+          :else                     thing)))
 
 ;; https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html#identify
 ;;
