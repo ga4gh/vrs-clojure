@@ -92,9 +92,28 @@
   (try (re-matches curie-regex object)
        (catch Throwable _)))
 
+;; https://vrs.ga4gh.org/en/latest/terms_and_model.html#humancytoband
+;;
+(defn iscn?
+  [object]
+  (try (re-matches #"^cen|[pq](ter|([1-9][0-9]*(\.[1-9][0-9]*)?))$" object)
+       (catch Throwable _)))
+
+(defn sequence?
+  "True when OBJECT is a sequence."
+  [object]
+  (try (re-matches sequence-regex object)
+       (catch Throwable _)))
+
 (s/def ::min nat-int?)
 
 (s/def ::max nat-int?)
+
+(s/def ::value int?)
+
+(s/def ::reverse_complement boolean?)
+
+(s/def ::comparator #{"<=" ">="})
 
 (s/def ::string (s/and string? seq))
 
@@ -110,23 +129,44 @@
 
 (s/def ::CURIE curie?)
 
-(s/def ::_id ::CURIE)
-
-(s/def ::sequence (partial re-matches sequence-regex))
+(s/def ::sequence sequence?)
 
 (s/def ::type digest/type?)
 
-(s/def ::value int?)
+(s/def ::LiteralSequenceExpression
+  (s/keys :req-un [::sequence ::type]))
 
-(s/def ::comparator #{"<=" ">="})
+(s/def ::Number
+  (s/keys :req-un [::type ::value]))
 
-(s/def ::Number (s/keys :req-un [::type ::value]))
+(s/def ::_id ::CURIE)
 
 (s/def ::DefiniteRange
   (s/keys :req-un [::max ::min ::type]))
 
 (s/def ::IndefiniteRange
   (s/keys :req-un [::comparator ::type ::value]))
+
+(s/def ::range
+  (s/or  ::definite-range   ::DefiniteRange
+         ::indefinite-range ::IndefiniteRange
+         ::number           ::Number))
+
+(s/def :vrs.spec.iscn/end     iscn?)
+(s/def :vrs.spec.iscn/start   iscn?)
+
+(s/def :vrs.spec.simple/end   nat-int?)
+(s/def :vrs.spec.simple/start nat-int?)
+
+(s/def :vrs.spec.seq/end      ::range)
+(s/def :vrs.spec.seq/start    ::range)
+
+(s/def ::CytobandInterval
+  (s/keys :req-un [::type :vrs.spec.iscn/end :vrs.spec.iscn/start]))
+
+(s/def ::SimpleInterval
+  (s/keys :opt-un [::_id]
+          :req-un [::type :vrs.spec.simple/end :vrs.spec.simple/start]))
 
 (s/def ::count
   (s/or ::definite-range   ::DefiniteRange
@@ -137,7 +177,7 @@
   (s/keys :req-un [::sequence ::type]))
 
 (s/def ::SequenceInterval
-  (s/keys :req-un [::type ::start ::end]))
+  (s/keys :req-un [::type :vrs.spec.seq/end :vrs.spec.seq/start]))
 
 (s/def ::interval ::SequenceInterval)
 
@@ -150,8 +190,6 @@
 (s/def :vrs.spec.allele/location
   (s/or ::curie    ::CURIE
         ::location ::location))
-
-(s/def ::reverse_complement boolean?)
 
 (s/def ::DerivedSequenceExpression
   (s/keys :req-un [::location ::reverse_complement ::type]))
@@ -239,23 +277,15 @@
   (s/or ::curie     ::CURIE
         ::variation ::variation))
 
-(s/def ::members
-  (s/coll-of ::member))
+(s/def ::members (s/coll-of ::member))
 
 (s/def ::VariationSet
   (s/keys :opt-un [::_id]
-          :req-un [::type ::members]))
+          :req-un [::members ::type]))
 
 (s/def ::AbsoluteCopyNumber
   (s/keys :opt-un [::_id]
-          :req-un [::type ::subject ::copies]))
-
-(s/def ::SimpleInterval
-  (s/keys :opt-un [::_id]
-          :req-un [::type ::start ::end]))
-
-(s/def ::CytobandInterval
-  (s/keys :req-un [::type ::start ::end]))
+          :req-un [::copies ::subject ::type]))
 
 (defn valid?
   "True when the VRS object O is valid according to spec."
