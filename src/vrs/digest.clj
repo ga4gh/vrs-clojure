@@ -18,37 +18,9 @@
           {:column ~column :file ~*file* :line ~line '~expression x#})
          x#))))
 
-(def ^:private haplotype
-  {:_id "TODO:replacewithvrsid"
-   :members
-   [{:_id "TODO:replacewithvrsid"
-     :location
-     {:_id "TODO:replacewithvrsid"
-      :interval
-      {:end {:type "Number" :value 44908822}
-       :start {:type "Number" :value 44908821}
-       :type "SequenceInterval"}
-      :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
-      :type "SequenceLocation"}
-     :state {:sequence "C" :type "LiteralSequenceExpression"}
-     :type "Allele"}
-    {:_id "TODO:replacewithvrsid"
-     :location
-     {:_id "TODO:replacewithvrsid"
-      :interval
-      {:end {:type "Number" :value 44908684}
-       :start {:type "Number" :value 44908683}
-       :type "SequenceInterval"}
-      :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
-      :type "SequenceLocation"}
-     :state {:sequence "C" :type "LiteralSequenceExpression"}
-     :type "Allele"}]
-   :type "Haplotype"})
-
 (def digestible
   "Map a digestible type to an identifier prefix as a keyword."
-  {"Abundance"          :VAB
-   "Allele"             :VA
+  {"Allele"             :VA
    "ChromosomeLocation" :VCL
    "CopyNumber"         :VCN
    "Genotype"           :VGT
@@ -81,6 +53,7 @@
 (def obsolete?
   "Other now obsolete indigestible types."
   #{"AbsoluteCopyNumber"
+    "Abundance"                         ; :VAB not anymore ...
     "GenotypeMember"
     "IndefiniteRange"
     "RelativeCopyNumber"
@@ -89,22 +62,10 @@
     "State"})
 
 (def type?
+  "The set of all type names -- even obsolete ones."
   (-> obsolete?
       (into indigestible?)
-      (into (keys digestible))))
-
-(def allele
-  "An example Allele VRS from the spec."
-  {:_id "ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc"
-   :location
-   {:interval
-    {:end {:type "Number" :value 44908822}
-     :start {:type "Number" :value 44908821}
-     :type "SequenceInterval"}
-    :sequence_id "refseq:NC_000019.10"
-    :type "SequenceLocation"}
-   :state {:sequence "T" :type "LiteralSequenceExpression"}
-   :type "Allele"})
+      (into digestible?)))
 
 (defn keyword->codepoint-seq
   "Return a codepoint (integer) iterator on the name of KW."
@@ -158,73 +119,3 @@
   "Digest a VRS object."
   [vrs]
   (walk/postwalk idify vrs))
-
-{:_id "ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc"
- :location
- {:interval
-  {:end {:type "Number" :value 44908822}
-   :start {:type "Number" :value 44908821}
-   :type "SequenceInterval"}
-  :sequence_id "refseq:NC_000019.10"
-  :type "SequenceLocation"}
- :state {:sequence "T" :type "LiteralSequenceExpression"}
- :type "Allele"}
-
-(jsonify allele)
-(identify allele)
-(identify haplotype)
-
-(def DkZLLMnwoH6zIncSRh2c05nzCNLdTqHl
-  "JSON VRS with ID ga4gh:VA.DkZLLMnwoH6zIncSRh2c05nzCNLdTqHl."
-  "{
-    \"_id\": \"ga4gh:VA.DkZLLMnwoH6zIncSRh2c05nzCNLdTqHl\",
-    \"type\": \"Allele\",
-    \"location\": {
-        \"type\": \"SequenceLocation\",
-        \"sequence_id\": \"ga4gh:SQ._0wi-qoDrvram155UmcSC-zA5ZK4fpLT\",
-        \"interval\": {
-            \"type\": \"SequenceInterval\",
-            \"start\": {
-                \"type\": \"Number\",
-                \"value\": 32936731
-            },
-            \"end\": {
-                \"type\": \"Number\",
-                \"value\": 32936732
-            }
-        }
-    },
-    \"state\": {
-        \"type\": \"LiteralSequenceExpression\",
-        \"sequence\": \"C\"
-    }
-   }")
-
-(def _YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc
-  "JSON VRS with ID ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc."
-  "{
-    \"_id\": \"ga4gh:VA._YNe5V9kyydfkGU0NRyCMHDSKHL4YNvc\",
-    \"location\": {
-      \"interval\": {
-        \"end\": {
-          \"type\": \"Number\",
-          \"value\": 44908822
-        },
-        \"start\": {
-          \"type\": \"Number\",
-          \"value\": 44908821
-        },
-        \"type\": \"SequenceInterval\"
-      },
-      \"sequence_id\": \"refseq:NC_000019.10\",
-      \"type\": \"SequenceLocation\"
-    },
-    \"state\": {
-      \"sequence\": \"T\",
-      \"type\": \"LiteralSequenceExpression\"
-    },
-    \"type\": \"Allele\"
-   }")
-
-(-> "./validation/functions.yaml" slurp yaml/parse-string)
-(-> "./validation/models.yaml" slurp yaml/parse-string)
