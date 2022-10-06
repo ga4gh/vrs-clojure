@@ -92,8 +92,6 @@
       (into (remove #(-> % first name first (= \_)) m))
       (json/write-str :escape-slash false)))
 
-(jsonify allele)
-
 (defn ^:private digest
   "Base64-encode the SHA-512 digest of string S."
   [s]
