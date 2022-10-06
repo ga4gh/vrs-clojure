@@ -5,16 +5,6 @@
             [clojure.string     :as str]
             [vrs.digest         :as digest]))
 
-(defmacro trace
-  "Like DUMP but map location metadata."
-  [expression]
-  (let [{:keys [line column]} (meta &form)]
-    `(let [x# ~expression]
-       (do
-         (clojure.pprint/pprint
-          {:column ~column :file ~*file* :line ~line '~expression x#})
-         x#))))
-
 ;; https://en.wikipedia.org/wiki/International_Union_of_Pure_and_Applied_Chemistry#Amino_acid_and_nucleotide_base_codes
 
 (def ^:private the-namespace-name
@@ -271,5 +261,4 @@
 (defn valid?
   "True when the VRS object O is valid according to spec."
   [o]
-  (trace o)
   (s/valid? (keyword the-namespace-name (:type o)) o))
