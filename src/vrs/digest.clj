@@ -23,7 +23,6 @@
   {"Allele"             :VA
    "ChromosomeLocation" :VCL
    "CopyNumber"         :VCN
-   "Genotype"           :VGT
    "Haplotype"          :VH
    "SequenceLocation"   :VSL
    "Text"               :VT
@@ -31,7 +30,7 @@
 
 (def digestible?
   "Set of the types that can be digested."
-  (set (keys digestible)))
+  (-> digestible keys set))
 
 (def indigestible?
   "Set of the types that cannot be digested."
@@ -54,6 +53,7 @@
   "Other now obsolete indigestible types."
   #{"AbsoluteCopyNumber"
     "Abundance"                         ; :VAB not anymore ...
+    "Genotype"                          ; :VGT not anymore ...
     "GenotypeMember"
     "IndefiniteRange"
     "RelativeCopyNumber"
