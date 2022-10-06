@@ -65,7 +65,6 @@
     "DefiniteRange"
     "DerivedSequenceExpression"
     "Gene"
-    "GenotypeMember"
     "HumanCytoband"
     "IndefiniteRange"
     "LiteralSequenceExpression"
@@ -78,6 +77,7 @@
 (def obsolete?
   "Other now obsolete indigestible types."
   #{"AbsoluteCopyNumber"
+    "GenotypeMember"
     "IndefiniteRange"
     "RelativeCopyNumber"
     "SequenceState"
