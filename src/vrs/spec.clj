@@ -152,14 +152,14 @@
          ::indefinite-range ::IndefiniteRange
          ::number           ::Number))
 
-(s/def :vrs.spec.iscn/end     iscn?)
-(s/def :vrs.spec.iscn/start   iscn?)
+(s/def :vrs.spec.iscn/end       iscn?)
+(s/def :vrs.spec.iscn/start     iscn?)
 
-(s/def :vrs.spec.simple/end   nat-int?)
-(s/def :vrs.spec.simple/start nat-int?)
+(s/def :vrs.spec.sequence/end   ::range)
+(s/def :vrs.spec.sequence/start ::range)
 
-(s/def :vrs.spec.seq/end      ::range)
-(s/def :vrs.spec.seq/start    ::range)
+(s/def :vrs.spec.simple/end     nat-int?)
+(s/def :vrs.spec.simple/start   nat-int?)
 
 (s/def ::CytobandInterval
   (s/keys :req-un [::type :vrs.spec.iscn/end :vrs.spec.iscn/start]))
@@ -177,7 +177,7 @@
   (s/keys :req-un [::sequence ::type]))
 
 (s/def ::SequenceInterval
-  (s/keys :req-un [::type :vrs.spec.seq/end :vrs.spec.seq/start]))
+  (s/keys :req-un [::type :vrs.spec.sequence/end :vrs.spec.sequence/start]))
 
 (s/def ::interval ::SequenceInterval)
 
