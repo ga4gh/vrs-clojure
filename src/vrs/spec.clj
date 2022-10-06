@@ -169,8 +169,7 @@
   (s/keys :req-un [::type :vrs.spec.iscn/end :vrs.spec.iscn/start]))
 
 (s/def ::SimpleInterval
-  (s/keys :opt-un [::_id]
-          :req-un [::type :vrs.spec.simple/end :vrs.spec.simple/start]))
+  (s/keys :req-un [::type :vrs.spec.simple/end :vrs.spec.simple/start]))
 
 (s/def ::count
   (s/or ::definite-range   ::DefiniteRange
@@ -276,6 +275,10 @@
   (s/or ::text          ::Text
         ::variation-set ::VariationSet))
 
+(s/def ::AbsoluteCopyNumber
+  (s/keys :opt-un [::_id]
+          :req-un [::copies ::subject ::type]))
+
 (s/def ::variation
   (s/or ::molecular-variation ::molecular-variation
         ::systemic-variation  ::systemic-variation
@@ -291,10 +294,6 @@
 (s/def ::VariationSet
   (s/keys :opt-un [::_id]
           :req-un [::type :vrs.spec.variation/members]))
-
-(s/def ::AbsoluteCopyNumber
-  (s/keys :opt-un [::_id]
-          :req-un [::copies ::subject ::type]))
 
 (defn valid?
   "True when the VRS object O is valid according to spec."
