@@ -27,14 +27,14 @@
             (> cpL cpR)                  1
             :else (recur (rest seqL) (rest seqR))))))
 
-(defn ^:private jsonify
+(defn ^:private ga4gh_serialize
   "Return a canonical JSON string for the map M."
   [m]
   (-> codepoints sorted-map-by
       (into (remove #(-> % first name first (= \_)) m))
       (json/write-str :escape-slash false)))
 
-(defn ^:private digest
+(defn ^:private sha512t24u
   "Base64-encode the SHA-512 digest of string S."
   [s]
   (-> (MessageDigest/getInstance "SHA-512")
@@ -42,11 +42,11 @@
       (Arrays/copyOf 24)
       (->> (.encodeToString (Base64/getUrlEncoder)))))
 
-(defn ^:private idify
+(defn ^:private ga4gh_identify
   "Add an _ID field to THING mapped to its digest when digestible."
   [{:keys [type] :as thing}]
   (let [prefix (spec/digestible type)]
-    (cond (keyword? prefix)         (-> thing jsonify digest
+    (cond (keyword? prefix)         (-> thing ga4gh_serialize sha512t24u
                                         (->> (str "ga4gh" prefix \.)
                                              (assoc thing :_id)))
           (spec/indigestible? type) thing
@@ -58,4 +58,4 @@
 (defn identify
   "Digest a VRS object."
   [vrs]
-  (walk/postwalk idify vrs))
+  (walk/postwalk ga4gh_identify vrs))
