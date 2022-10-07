@@ -79,7 +79,9 @@
    "Allele"             :VA
    "ChromosomeLocation" :VCL
    "CopyNumber"         :VCN            ; not in validation suite
+   "Genotype"           :VG             ; not in validation suite
    "Haplotype"          :VH
+   "RelativeCopyNumber" :VRC
    "SequenceLocation"   :VSL
    "Text"               :VT
    "VariationSet"       :VS})
@@ -103,9 +105,7 @@
 
 (def obsolete?
   "Obsolete types that still show up in validation suites."
-  #{"AbsoluteCopyNumber"
-    "RelativeCopyNumber"
-    "SequenceState"
+  #{"SequenceState"
     "SimpleInterval"})
 
 (def type?
@@ -129,11 +129,11 @@
   "Match a CURIE to 3 groups: 'ga4gh':'type'.'digest'."
   (let [ga4gh           "(ga4gh)"
         url-safe-base64 "[a-zA-Z_-]"
-        hash-size       24
-        hash-group      (str "(" url-safe-base64 "{" hash-size "})")]
+        size            24
+        digest          (str "(" url-safe-base64 "{" size "})")]
     (-> digestible?
         (->> (map name) sort (interpose "|") (apply str)) ; type
-        (interpose [(str "^" ga4gh ":(") (str ")\\." hash-group "$")])
+        (interpose [(str "^" ga4gh ":(") (str ")\\." digest "$")])
         (->> (apply str))
         re-pattern)))
 
