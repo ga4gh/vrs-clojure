@@ -1,17 +1,68 @@
 (ns vrs.spec-test
   "Test the spec model of VRS objects."
-  (:require [clojure.test    :refer [deftest is testing]]
-            [clojure.edn     :as edn]
-            [clojure.java.io :as io]
-            [clj-yaml.core   :as yaml]
-            [vrs.spec        :as spec]))
+  (:require [clojure.test       :refer [deftest is testing]]
+            [clj-yaml.core      :as yaml]
+            [clojure.edn        :as edn]
+            [clojure.java.io    :as io]
+            [vrs.digest         :as digest]
+            [vrs.spec           :as spec]))
 
-(def model-objects
-  "A seq of seqs of verified VRS objects."
-  (-> "models.yaml" io/resource slurp yaml/parse-string))
+(defn ^:private ednify
+  "Return EDN from the YAML file."
+  [yaml]
+  (-> yaml io/resource slurp yaml/parse-string))
 
-(deftest spec-test
-  (testing "testing validation of model objects"
-    (run! #(is (spec/valid? (:in %))) (map first (vals model-objects)))))
+(defn ^:private model-example-out-from-in?
+  "Assert OUT is validly derived from IN from some example."
+  [in {:keys [ga4gh_digest ga4gh_identify ga4gh_serialize] :as out}]
+  (is (every? map? [in out]))
+  (is (not (every? nil? [ga4gh_digest ga4gh_identify ga4gh_serialize])))
+  (let [serialized (#'digest/ga4gh_serialize in)]
+    (spec/trace ga4gh_serialize)
+    (spec/trace (#'digest/ga4gh_serialize in))
+    (is (= ga4gh_serialize (#'digest/ga4gh_serialize in)))
+    (when ga4gh_digest
+      (is (= ga4gh_digest (#'digest/sha512t24u serialized))))
+    (when ga4gh_identify
+      (let [id (-> in (#'digest/ga4gh_identify) :_id)]
+        (is (spec/curie? id))
+        (is (= ga4gh_identify id))))))
+
+(defn ^:private model-example-valid?
+  "Assert IN has the type KIND and OUT is validly derived from IN."
+  [kind {:keys [in out] :as example}]
+  (is (map? example))
+  (is (= kind (:type in)))
+  (is (spec/valid? in))
+  (model-example-out-from-in? in out))
+
+(defn ^:private model-valid?
+  "Assert that each of EXAMPLES is a valid instance of KIND."
+  [[kind examples]]
+  (is (keyword? kind))
+  (is (seq? examples))
+  (run! (partial model-example-valid? (name kind)) examples))
+
+(deftest models
+  (testing "examples in models.yaml"
+    (run! model-valid? (ednify "models.yaml"))))
+
+(defn ^:private function-example-valid?
+  [function {:keys [in out] :as example}]
+  (is fn? function)
+  (is (map? example))
+  (is (map? in))
+  (is (= out (-> in :blob function))))
+
+(defn ^:private function-valid?
+  [[function examples]]
+  (is (keyword? function))
+  (is (seq? examples))
+  (let [f (ns-resolve 'vrs.digest (symbol (name function)))]
+    (run! (partial function-example-valid? f) examples)))
+
+(deftest functions
+  (testing "examples in functions.yaml"
+    (run! function-valid? (ednify "functions.yaml"))))
 
 (clojure.test/test-all-vars *ns*)
