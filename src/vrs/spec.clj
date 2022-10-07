@@ -4,6 +4,16 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.string     :as str]))
 
+(defmacro trace
+  "Like DUMP but map location metadata."
+  [expression]
+  (let [{:keys [line column]} (meta &form)]
+    `(let [x# ~expression]
+       (do
+         (clojure.pprint/pprint
+          {:column ~column :file ~*file* :line ~line '~expression x#})
+         x#))))
+
 (def ^:private the-namespace-name
   "The name of this namespace as a string for `valid?` below."
   (name (ns-name *ns*)))
