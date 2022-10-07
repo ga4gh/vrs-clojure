@@ -1,7 +1,8 @@
 (ns vrs.spec
   "Clojure spec implementation of VRS data model
   https://vrs.ga4gh.org/en/stable/terms_and_model.html"
-  (:require [clojure.spec.alpha :as s]
+  (:require [clojure.pprint     :refer [pprint]]
+            [clojure.spec.alpha :as s]
             [clojure.string     :as str]))
 
 (defmacro trace
@@ -10,13 +11,12 @@
   (let [{:keys [line column]} (meta &form)]
     `(let [x# ~expression]
        (do
-         (clojure.pprint/pprint
-          {:column ~column :file ~*file* :line ~line '~expression x#})
+         (pprint {:column ~column :file ~*file* :line ~line '~expression x#})
          x#))))
 
 (def ^:private the-namespace-name
   "The name of this namespace as a string for `valid?` below."
-  (name (ns-name *ns*)))
+  (-> *ns* ns-name name))
 
 ;; https://en.wikipedia.org/wiki/International_Union_of_Pure_and_Applied_Chemistry#Amino_acid_and_nucleotide_base_codes
 
@@ -128,11 +128,11 @@
 (def curie-regex
   "Match a CURIE to 3 groups: 'ga4gh':'type'.'digest'."
   (let [ga4gh           "(ga4gh)"
-        url-safe-base64 "[a-zA-Z_-]"
-        size            24
+        url-safe-base64 "[a-z0-9A-Z_-]"
+        size            32
         digest          (str "(" url-safe-base64 "{" size "})")]
-    (-> digestible?
-        (->> (map name) sort (interpose "|") (apply str)) ; type
+    (-> digestible vals
+        (->> (map name) sort (interpose "|") (apply str))
         (interpose [(str "^" ga4gh ":(") (str ")\\." digest "$")])
         (->> (apply str))
         re-pattern)))
@@ -173,6 +173,8 @@
 (s/def ::definition ::string)
 
 (s/def ::gene_id ::string)
+
+(s/def ::name ::string)
 
 (s/def ::relative_copy_class ::string)
 
@@ -238,7 +240,7 @@
         ::sequence-interval ::SequenceInterval))
 
 (s/def ::SequenceLocation
-  (s/keys :opt-un [::_id]
+  (s/keys :opt-un [::_id ::name]
           :req-un [::interval ::sequence_id ::type]))
 
 (s/def ::location ::SequenceLocation)
@@ -347,6 +349,7 @@
           :req-un [::type :vrs.spec.variation/members]))
 
 (defn valid?
-  "True when the VRS object O is valid according to spec."
-  [o]
-  (s/valid? (keyword the-namespace-name (:type o)) o))
+  "True when the OBJECT is valid according to the VRS spec."
+  [{:keys [type] :as object}]
+  #_(trace object)
+  (s/valid? (keyword the-namespace-name type) object))
