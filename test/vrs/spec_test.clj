@@ -3,14 +3,12 @@
   (:require [clojure.test       :refer [deftest is testing]]
             [clj-http.client    :as http]
             [clj-yaml.core      :as yaml]
-            [clojure.edn        :as edn]
-            [clojure.java.io    :as io]
             [clojure.string     :as str]
             [vrs.digest         :as digest]
             [vrs.spec           :as spec]))
 
 (defn ^:private ednify
-  "Return EDN from the YAML file."
+  "Return EDN from the YAML file on GitHub."
   [yaml]
   (->> (str yaml ".yaml")
        (conj ["https:" "" "raw.githubusercontent.com"
