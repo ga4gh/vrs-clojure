@@ -4,4 +4,5 @@
  :deps
  {org.clojure/clojure   {:mvn/version "1.11.1"}
   org.clojure/data.json {:mvn/version "2.4.0"}
-  clj-commons/clj-yaml  {:mvn/version "1.0.26"}}}
+  clj-commons/clj-yaml  {:mvn/version "1.0.26"}
+  clj-http              {:mvn/version "3.12.3"}}}

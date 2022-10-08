@@ -1,16 +1,22 @@
 (ns vrs.spec-test
   "Test the spec model of VRS objects."
   (:require [clojure.test       :refer [deftest is testing]]
+            [clj-http.client    :as http]
             [clj-yaml.core      :as yaml]
             [clojure.edn        :as edn]
             [clojure.java.io    :as io]
+            [clojure.string     :as str]
             [vrs.digest         :as digest]
             [vrs.spec           :as spec]))
 
 (defn ^:private ednify
   "Return EDN from the YAML file."
   [yaml]
-  (-> yaml io/resource slurp yaml/parse-string))
+  (->> (str yaml ".yaml")
+       (conj ["https:" "" "raw.githubusercontent.com"
+              "ga4gh" "vrs" "main" "validation"])
+       (str/join "/")
+       http/get :body yaml/parse-string))
 
 (defn ^:private model-example-out-from-in?
   "Assert OUT is validly derived from IN from some example."
@@ -18,8 +24,6 @@
   (is (every? map? [in out]))
   (is (not (every? nil? [ga4gh_digest ga4gh_identify ga4gh_serialize])))
   (let [serialized (#'digest/ga4gh_serialize in)]
-    (spec/trace ga4gh_serialize)
-    (spec/trace (#'digest/ga4gh_serialize in))
     (is (= ga4gh_serialize (#'digest/ga4gh_serialize in)))
     (when ga4gh_digest
       (is (= ga4gh_digest (#'digest/sha512t24u serialized))))
@@ -45,7 +49,7 @@
 
 (deftest models
   (testing "examples in models.yaml"
-    (run! model-valid? (ednify "models.yaml"))))
+    (run! model-valid? (ednify "models"))))
 
 (defn ^:private function-example-valid?
   [function {:keys [in out] :as example}]
@@ -63,6 +67,6 @@
 
 (deftest functions
   (testing "examples in functions.yaml"
-    (run! function-valid? (ednify "functions.yaml"))))
+    (run! function-valid? (ednify "functions"))))
 
 (clojure.test/test-all-vars *ns*)
