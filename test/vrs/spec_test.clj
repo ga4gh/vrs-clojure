@@ -1,11 +1,11 @@
 (ns vrs.spec-test
   "Test the spec model of VRS objects."
-  (:require [clojure.test       :refer [deftest is testing]]
-            [clj-http.client    :as http]
-            [clj-yaml.core      :as yaml]
-            [clojure.string     :as str]
-            [vrs.digest         :as digest]
-            [vrs.spec           :as spec]))
+  (:require [clojure.test    :refer [deftest is testing]]
+            [clj-http.client :as http]
+            [clj-yaml.core   :as yaml]
+            [clojure.string  :as str]
+            [vrs.digest      :as digest]
+            [vrs.spec        :as spec]))
 
 (defn ^:private ednify
   "Return EDN from the YAML file on GitHub."
