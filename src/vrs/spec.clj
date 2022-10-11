@@ -20,7 +20,7 @@
 
 ;; https://en.wikipedia.org/wiki/International_Union_of_Pure_and_Applied_Chemistry#Amino_acid_and_nucleotide_base_codes
 
-(def nucleics
+(def ^:private nucleics
   "The IUPAC nucleic acid codes."
   {:A "Adenine"
    :C "Cytosine"
@@ -41,7 +41,7 @@
    :X "Masked"
    :- "Gap"})
 
-(def aminos
+(def ^:private aminos
   "The IUPAC amino acid codes."
   {:A "Alanine"
    :B "Aspartic acid or Asparagine"
@@ -103,18 +103,18 @@
     "RepeatedSequenceExpression"
     "SequenceInterval"})
 
-(def obsolete?
+(def ^:private obsolete?
   "Obsolete types that still show up in validation suites."
   #{"SequenceState"
     "SimpleInterval"})
 
-(def type?
+(def ^:private type?
   "The set of all type names -- even obsolete ones."
   (-> obsolete?
       (into indigestible?)
       (into digestible?)))
 
-(def sequence-regex
+(def ^:private sequence-regex
   "Match the characters in the aminos and nucleics keys."
   (-> (concat (keys aminos) (keys nucleics)) set
       (->> (map name) (apply str))
@@ -125,7 +125,7 @@
 
 ;; Recent JDKs put java.util.Base64$Encoder/toBase64URL off limits!
 ;;
-(def curie-regex
+(def ^:private curie-regex
   "Match a CURIE to 3 groups: 'ga4gh':'type'.'digest'."
   (let [ga4gh           "(ga4gh)"
         url-safe-base64 "[a-z0-9A-Z_-]"
@@ -137,7 +137,7 @@
         (->> (apply str))
         re-pattern)))
 
-(defn curie?
+(defn ^:private curie?
   "True when OBJECT is a CURIE."
   [object]
   (try (re-matches curie-regex object)
@@ -145,12 +145,12 @@
 
 ;; https://vrs.ga4gh.org/en/latest/terms_and_model.html#humancytoband
 ;;
-(defn iscn?
+(defn ^:private iscn?
   [object]
   (try (re-matches #"^cen|[pq](ter|([1-9][0-9]*(\.[1-9][0-9]*)?))$" object)
        (catch Throwable _)))
 
-(defn sequence?
+(defn ^:private sequence?
   "True when OBJECT is a sequence."
   [object]
   (try (re-matches sequence-regex object)
@@ -351,5 +351,4 @@
 (defn valid?
   "True when the OBJECT is valid according to the VRS spec."
   [{:keys [type] :as object}]
-  #_(trace object)
   (s/valid? (keyword the-namespace-name type) object))

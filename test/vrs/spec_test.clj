@@ -27,7 +27,7 @@
       (is (= ga4gh_digest (#'digest/sha512t24u serialized))))
     (when ga4gh_identify
       (let [id (-> in (#'digest/ga4gh_identify) :_id)]
-        (is (spec/curie? id))
+        (is (#'spec/curie? id))
         (is (= ga4gh_identify id))))))
 
 (defn ^:private model-example-valid?

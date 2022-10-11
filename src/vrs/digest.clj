@@ -9,7 +9,7 @@
            [java.security MessageDigest]
            [java.util Arrays Base64]))
 
-(defn keyword->codepoint-seq
+(defn ^:private keyword->codepoint-seq
   "Return a codepoint (integer) iterator on the name of KW."
   [^Keyword kw]
   (-> kw name .codePoints .iterator iterator-seq))
