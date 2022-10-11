@@ -27,11 +27,21 @@
             (> cpL cpR)                  1
             :else (recur (rest seqL) (rest seqR))))))
 
+(defn ^:private frob
+  "Do whatever the GA4GH VRS says to do to a [K V] field."
+  [[k v]]
+  (if (string? v)
+    (let [[curie? _ga4gh _type digest] (re-matches spec/curie-regex v)]
+      (if curie? [k digest] [k v]))
+    [k v]))
+
 (defn ^:private ga4gh_serialize
   "Return a canonical JSON string for the map M."
   [m]
   (-> codepoints sorted-map-by
-      (into (remove #(-> % first name first (= \_)) m))
+      (into (->> m
+                 (remove #(-> % first name first (= \_)))
+                 (map frob)))
       (json/write-str :escape-slash false)))
 
 (defn ^:private sha512t24u
