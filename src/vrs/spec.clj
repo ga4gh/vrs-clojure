@@ -125,7 +125,7 @@
 
 ;; Recent JDKs put java.util.Base64$Encoder/toBase64URL off limits!
 ;;
-(def ^:private curie-regex
+(def curie-regex
   "Match a CURIE to 3 groups: 'ga4gh':'type'.'digest'."
   (let [ga4gh           "(ga4gh)"
         url-safe-base64 "[a-z0-9A-Z_-]"
