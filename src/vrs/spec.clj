@@ -124,6 +124,8 @@
       re-pattern))
 
 ;; Recent JDKs put java.util.Base64$Encoder/toBase64URL off limits!
+;; Evidently "SQ" is also a valid type prefix for a CURIE.¯\_(ツ)_/¯
+;; https://github.com/ga4gh/vrs/blob/5d7f29cbdfac15619f9f39b38c370be416828fe6/validation/models.yaml#L95
 ;;
 (def curie-regex
   "Match a CURIE to 3 groups: 'ga4gh':'type'.'digest'."
@@ -131,7 +133,7 @@
         url-safe-base64 "[a-z0-9A-Z_-]"
         size            32
         digest          (str "(" url-safe-base64 "{" size "})")]
-    (-> digestible vals
+    (-> digestible vals (conj :SQ)
         (->> (map name) sort (interpose "|") (apply str))
         (interpose [(str "^" ga4gh ":(") (str ")\\." digest "$")])
         (->> (apply str))

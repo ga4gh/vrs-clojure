@@ -21,12 +21,12 @@
   [in {:keys [ga4gh_digest ga4gh_identify ga4gh_serialize] :as out}]
   (is (every? map? [in out]))
   (is (not (every? nil? [ga4gh_digest ga4gh_identify ga4gh_serialize])))
-  (let [serialized (#'digest/ga4gh_serialize in)]
-    (is (= ga4gh_serialize (#'digest/ga4gh_serialize in)))
+  (let [serialized (digest/ga4gh_serialize in)]
+    (is (= ga4gh_serialize serialized))
     (when ga4gh_digest
       (is (= ga4gh_digest (#'digest/sha512t24u serialized))))
     (when ga4gh_identify
-      (let [id (-> in (#'digest/ga4gh_identify) :_id)]
+      (let [id (-> in (digest/identify) :_id)]
         (is (#'spec/curie? id))
         (is (= ga4gh_identify id))))))
 
@@ -47,7 +47,7 @@
 
 (deftest models
   (testing "examples in models.yaml"
-    (run! model-valid? (ednify "models"))))
+    (run! model-valid? (select-keys (ednify "models") [:SequenceLocation]))))
 
 (defn ^:private function-example-valid?
   [function {:keys [in out] :as example}]
