@@ -47,7 +47,9 @@
 
 (deftest models
   (testing "examples in models.yaml"
-    (run! model-valid? (select-keys (ednify "models") [:SequenceLocation]))))
+    (-> "models" ednify
+        (select-keys [:SequenceLocation])
+        (->> (run! model-valid?)))))
 
 (defn ^:private function-example-valid?
   [function {:keys [in out] :as example}]
