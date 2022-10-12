@@ -114,6 +114,8 @@
       (into indigestible?)
       (into digestible?)))
 
+;; Recent JDKs put java.util.Base64$Encoder/toBase64URL off limits!
+;;
 (def ^:private digest-regex
   "32 character from the Base64 alphabet safe for URLs by RFC#4648§5."
   (let [url-safe-base64 "[a-z0-9A-Z_-]"
@@ -129,7 +131,6 @@
       (->> (apply str))
       re-pattern))
 
-;; Recent JDKs put java.util.Base64$Encoder/toBase64URL off limits!
 ;; Evidently "SQ" is also a valid type prefix for a CURIE.¯\_(ツ)_/¯
 ;; https://github.com/ga4gh/vrs/blob/5d7f29cbdfac15619f9f39b38c370be416828fe6/validation/models.yaml#L95
 ;;
@@ -142,21 +143,22 @@
       re-pattern))
 
 (defn ^:private digest?
-  "True when OBJECT is a CURIE digest without 'ga4gh' and type prefix."
+  "Nil or the OBJECT string when it is the digest part of a CURIE."
   [object]
   (try (re-matches digest-regex object)
        (catch Throwable _)))
 
 (defn ^:private sequence?
-  "True when OBJECT is a sequence."
+  "Nil or the OBJECT string when it is a sequence."
   [object]
   (try (re-matches sequence-regex object)
        (catch Throwable _)))
 
 (defn ^:private curie?
-  "True when OBJECT is a CURIE."
+  "Nil or the [TYPE DIGEST] from the OBJECT when it is a CURIE string."
   [object]
-  (try (re-matches curie-regex object)
+  (try (let [[curie? _ga4gh type digest] (re-matches curie-regex object)]
+         (when curie? [type digest]))
        (catch Throwable _)))
 
 ;; https://vrs.ga4gh.org/en/latest/terms_and_model.html#humancytoband
