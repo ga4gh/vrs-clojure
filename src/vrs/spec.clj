@@ -114,6 +114,12 @@
       (into indigestible?)
       (into digestible?)))
 
+(def ^:private digest-regex
+  "32 character from the Base64 alphabet safe for URLs by RFC#4648§5."
+  (let [url-safe-base64 "[a-z0-9A-Z_-]"
+        size            32]
+    (re-pattern (str "(" url-safe-base64 "{" size "})"))))
+
 (def ^:private sequence-regex
   "Match the characters in the aminos and nucleics keys."
   (-> (concat (keys aminos) (keys nucleics)) set
@@ -129,15 +135,23 @@
 ;;
 (def curie-regex
   "Match a CURIE to 3 groups: 'ga4gh':'type'.'digest'."
-  (let [ga4gh           "(ga4gh)"
-        url-safe-base64 "[a-z0-9A-Z_-]"
-        size            32
-        digest          (str "(" url-safe-base64 "{" size "})")]
-    (-> digestible vals (conj :SQ)
-        (->> (map name) sort (interpose "|") (apply str))
-        (interpose [(str "^" ga4gh ":(") (str ")\\." digest "$")])
-        (->> (apply str))
-        re-pattern)))
+  (-> digestible vals (conj :SQ)
+      (->> (map name) sort (interpose "|") (apply str))
+      (interpose ["^(ga4gh):(" (str ")\\." digest-regex "$")])
+      (->> (apply str))
+      re-pattern))
+
+(defn ^:private digest?
+  "True when OBJECT is a CURIE digest without 'ga4gh' and type prefix."
+  [object]
+  (try (re-matches digest-regex object)
+       (catch Throwable _)))
+
+(defn ^:private sequence?
+  "True when OBJECT is a sequence."
+  [object]
+  (try (re-matches sequence-regex object)
+       (catch Throwable _)))
 
 (defn ^:private curie?
   "True when OBJECT is a CURIE."
@@ -150,12 +164,6 @@
 (defn ^:private iscn?
   [object]
   (try (re-matches #"^cen|[pq](ter|([1-9][0-9]*(\.[1-9][0-9]*)?))$" object)
-       (catch Throwable _)))
-
-(defn ^:private sequence?
-  "True when OBJECT is a sequence."
-  [object]
-  (try (re-matches sequence-regex object)
        (catch Throwable _)))
 
 (s/def ::min nat-int?)

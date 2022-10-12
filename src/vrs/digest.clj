@@ -30,17 +30,14 @@
 (defn ^:private frob
   "Do whatever the GA4GH VRS says to do to a [K V] field."
   [[k v]]
-  (spec/trace ['frob k v])
   (if (string? v)
     (let [[curie? _ga4gh _type digest] (re-matches spec/curie-regex v)]
-      (spec/trace ['frob curie? digest])
       (if curie? [k digest] [k v]))
     [k v]))
 
 (defn ^:private serialize
   "Return a canonical JSON string for the map M."
   [m]
-  (spec/trace ['serialize m])
   (if (map? m)
     (-> codepoints sorted-map-by
         (into (->> m
@@ -51,7 +48,6 @@
 (defn ga4gh_serialize
   "Satisfy the ga4gh_serialize validation on VRS for testing."
   [vrs]
-  (spec/trace ['ga4gh_serialize vrs])
   (json/write-str (walk/postwalk serialize vrs) :escape-slash false))
 
 (defn ^:private sha512t24u
