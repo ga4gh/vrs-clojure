@@ -9,6 +9,11 @@
            [java.security MessageDigest]
            [java.util Arrays Base64]))
 
+(defn ^:private jsonify
+  "Return a string containing the JSON projection of EDN."
+  [edn]
+  (json/write-str edn :escape-slash false))
+
 (defn ^:private keyword->codepoint-seq
   "Return a codepoint (integer) iterator on the name of KW."
   [^Keyword kw]
@@ -27,53 +32,33 @@
             (> cpL cpR)                  1
             :else (recur (rest seqL) (rest seqR))))))
 
-(defn ^:private frob
-  "Do whatever the GA4GH VRS says to do to a [K V] field."
-  [[k v]]
-  (if (string? v)
-    (let [[curie? _ga4gh _type digest] (re-matches spec/curie-regex v)]
-      (if curie? [k digest] [k v]))
-    [k v]))
-
-(defn ^:private serialize
-  "Return a canonical JSON string for the map M."
-  [m]
-  (if (map? m)
-    (-> codepoints sorted-map-by
-        (into (->> m
-                   (remove #(-> % first name first (= \_)))
-                   (map frob))))
-    m))
-
-(defn ga4gh_serialize
-  "Satisfy the ga4gh_serialize validation on VRS for testing."
-  [vrs]
-  (json/write-str (walk/postwalk serialize vrs) :escape-slash false))
-
 (defn ^:private sha512t24u
-  "Base64-encode the SHA-512 digest of string S."
+  "Base64-encode the truncated SHA-512 digest of string S."
   [s]
   (-> (MessageDigest/getInstance "SHA-512")
       (.digest (.getBytes s))
       (Arrays/copyOf 24)
       (->> (.encodeToString (Base64/getUrlEncoder)))))
 
-(defn ^:private ga4gh_identify
-  "Add an _ID field to THING mapped to its digest when digestible."
-  [{:keys [type] :as thing}]
-  (let [prefix (spec/digestible type)]
-    (cond (keyword? prefix)         (-> thing serialize
-                                        (json/write-str :escape-slash false)
-                                        sha512t24u
-                                        (->> (str "ga4gh" prefix \.)
-                                             (assoc thing :_id)))
-          (spec/indigestible? type) thing
-          (map? thing)              (spec/trace thing)
-          :else                     thing)))
+(defn ^:private digest
+  "Return IT or ITs digest when ITs TYPE is digestible."
+  [{:keys [type] :as it}]
+  (if (spec/digestible? type)
+    (-> it spec/trace jsonify sha512t24u)
+    it))
 
-;; https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html#identify
-;;
-(defn identify
-  "Digest a VRS object."
+(defn ^:private dictify
+  "Adjust IT according to vrs-python's dictify(:sigh:)."
+  [it]
+  (letfn [(each [m [k v]] (if (-> k name first (= \_)) m
+                              (assoc m k (dictify v))))]
+    (cond (map?        it) (reduce each {} it)
+          (sequential? it) (into [] (if (every? spec/curie? it)
+                                      (sort it)
+                                      (map dictify it)))
+          (string?     it) (-> it spec/curie? second (or it))
+          :else        it)))
+
+(defn ga4gh_serialize
   [vrs]
-  (walk/postwalk ga4gh_identify vrs))
+  (->> vrs (walk/postwalk dictify) jsonify))

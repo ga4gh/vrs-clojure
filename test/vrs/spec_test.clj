@@ -22,13 +22,15 @@
   (is (every? map? [in out]))
   (is (not (every? nil? [ga4gh_digest ga4gh_identify ga4gh_serialize])))
   (let [serialized (digest/ga4gh_serialize in)]
+    (spec/trace ga4gh_serialize)
+    (spec/trace serialized)
     (is (= ga4gh_serialize serialized))
-    (when ga4gh_digest
-      (is (= ga4gh_digest (#'digest/sha512t24u serialized))))
-    (when ga4gh_identify
-      (let [id (-> in (digest/identify) :_id)]
-        (is (#'spec/curie? id))
-        (is (= ga4gh_identify id))))))
+    #_(when ga4gh_digest
+        (is (= ga4gh_digest (#'digest/sha512t24u serialized))))
+    #_(when ga4gh_identify
+        (let [id (-> in (digest/identify) :_id)]
+          (is (#'spec/curie? id))
+          (is (= ga4gh_identify id))))))
 
 (defn ^:private model-example-valid?
   "Assert IN has the type KIND and OUT is validly derived from IN."
@@ -48,7 +50,7 @@
 (deftest models
   (testing "examples in models.yaml"
     (-> "models" ednify
-        (select-keys [:DerivedSequenceExpression])
+        #_(select-keys [:DerivedSequenceExpression])
         (->> (run! model-valid?)))))
 
 (defn ^:private function-example-valid?

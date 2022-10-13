@@ -154,7 +154,7 @@
   (try (re-matches sequence-regex object)
        (catch Throwable _)))
 
-(defn ^:private curie?
+(defn curie?
   "Nil or the [TYPE DIGEST] from the OBJECT when it is a CURIE string."
   [object]
   (try (let [[curie? _ga4gh type digest] (re-matches curie-regex object)]
