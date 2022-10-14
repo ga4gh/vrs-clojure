@@ -1,12 +1,11 @@
 (ns vrs.spec
-  "Clojure spec implementation of VRS data model
-  https://vrs.ga4gh.org/en/stable/terms_and_model.html"
+  "Model VRS. https://vrs.ga4gh.org/en/stable/terms_and_model.html"
   (:require [clojure.pprint     :refer [pprint]]
             [clojure.spec.alpha :as s]
             [clojure.string     :as str]))
 
 (defmacro trace
-  "Like DUMP but map location metadata."
+  "Print a map of EXPRESSION and its value with location metadata."
   [expression]
   (let [{:keys [line column]} (meta &form)]
     `(let [x# ~expression]

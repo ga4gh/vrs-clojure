@@ -3,7 +3,6 @@
   https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html"
   (:require [clojure.data.json :as json]
             [clojure.walk      :as walk]
-            [clj-yaml.core     :as yaml]
             [vrs.spec          :as spec])
   (:import [clojure.lang Keyword]
            [java.security MessageDigest]
