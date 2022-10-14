@@ -46,18 +46,19 @@
   "Frob VRO like vrs-python's DICTIFY, and digest VRO when ENREF?."
   [enref? vro]
   (letfn [(digestible? [vro] (and enref? (-> vro :type spec/digestible?)))
+          (all-curies? [vro] (and (sequential? vro) (every? spec/curie? vro)))
           (each [m [k v]] (if (-> k name first (= \_)) m
                               (assoc m k (dictify true v))))
           (uncurieify  [vro] (-> vro spec/curie? second (or vro)))]
-    (cond (boolean?    vro)  vro
+    (cond (all-curies? vro)  (->> vro
+                                  (map uncurieify)
+                                  (sort-by identity codepoints)
+                                  (into []))
+          (boolean?    vro)  vro
           (digestible? vro)  (ga4gh_digest vro)
           (map?        vro)  (reduce each {} vro)
           (number?     vro)  vro
-          (sequential? vro)  (into [] (if (every? spec/curie? vro)
-                                        (->> vro
-                                             (map uncurieify)
-                                             (sort-by identity codepoints))
-                                        (map (partial dictify true) vro)))
+          (sequential? vro)  (into [] (map (partial dictify true) vro))
           (string?     vro)  (uncurieify vro)
           :else              (throw (ex-info "Cannot serialize" {:vro vro})))))
 
@@ -77,3 +78,11 @@
   "Implement vrs-python's GA4GH_DIGEST for VRO."
   [vro]
   (-> vro ga4gh_serialize sha512t24u))
+
+(defn ga4gh_identify
+  "Implement vrs-python's GA4GH_DIGEST for VRO."
+  [{:keys [type] :as vro}]
+  (let [digest (-> vro ga4gh_digest)]
+    (if-let [prefix (spec/digestible type)]
+      (str "ga4gh" prefix \. digest)
+      digest)))

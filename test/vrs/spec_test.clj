@@ -24,14 +24,14 @@
   (let [serialized (digest/ga4gh_serialize in)]
     (testing "ga4gh_serialize"
       (is (= ga4gh_serialize serialized)))
-    #_(testing "ga4gh_digest"
-        (when ga4gh_digest
-          (is (= ga4gh_digest (#'digest/sha512t24u serialized)))))
-    #_(testing "ga4gh_identify"
-        (when ga4gh_identify
-          (let [id (-> in (digest/identify) :_id)]
-            (is (#'spec/curie? id))
-            (is (= ga4gh_identify id)))))))
+    (testing "ga4gh_digest"
+      (when ga4gh_digest
+        (is (= ga4gh_digest (#'digest/sha512t24u serialized)))))
+    (testing "ga4gh_identify"
+      (when ga4gh_identify
+        (let [id (digest/ga4gh_identify in)]
+          (is (#'spec/curie? id))
+          (is (= ga4gh_identify id)))))))
 
 (defn ^:private model-example-valid?
   "Assert IN has the type KIND and OUT is validly derived from IN."
