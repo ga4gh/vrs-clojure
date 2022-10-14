@@ -132,6 +132,7 @@
       re-pattern))
 
 ;; Evidently "SQ" is also a valid type prefix for a CURIE.¯\_(ツ)_/¯
+;; https://github.com/ga4gh/vrs/blob/5d7f29cbdfac15619f9f39b38c370be416828fe6/schema/ga4gh.yaml#L20
 ;; https://github.com/ga4gh/vrs/blob/5d7f29cbdfac15619f9f39b38c370be416828fe6/validation/models.yaml#L95
 ;;
 (def curie-regex
