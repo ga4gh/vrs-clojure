@@ -131,12 +131,12 @@
       (->> (apply str))
       re-pattern))
 
-;; Evidently "SQ" is also a valid type prefix for a CURIE.¯\_(ツ)_/¯
+;; Evidently "SQ" is also a valid type prefix for a VRS CURIE.¯\_(ツ)_/¯
 ;; https://github.com/ga4gh/vrs/blob/5d7f29cbdfac15619f9f39b38c370be416828fe6/schema/ga4gh.yaml#L20
 ;; https://github.com/ga4gh/vrs/blob/5d7f29cbdfac15619f9f39b38c370be416828fe6/validation/models.yaml#L95
 ;;
 (def curie-regex
-  "Match a CURIE to 3 groups: 'ga4gh':'type'.'digest'."
+  "Match a VRS CURIE to 3 groups: 'ga4gh':'type'.'digest'."
   (-> digestible vals (conj :SQ)
       (->> (map name) sort (interpose "|") (apply str))
       (interpose ["^(ga4gh):(" (str ")\\." digest-regex "$")])
@@ -144,7 +144,7 @@
       re-pattern))
 
 (defn ^:private digest?
-  "Nil or the OBJECT string when it is the digest part of a CURIE."
+  "Nil or the OBJECT string when it is the digest part of a VRS CURIE."
   [object]
   (try (re-matches digest-regex object)
        (catch Throwable _)))
@@ -156,7 +156,7 @@
        (catch Throwable _)))
 
 (defn curie?
-  "Nil or the [TYPE DIGEST] from the OBJECT when it is a CURIE string."
+  "Nil or [TYPE DIGEST] from OBJECT when it is a VRS CURIE string."
   [object]
   (try (let [[curie? _ga4gh type digest] (re-matches curie-regex object)]
          (when curie? [type digest]))
