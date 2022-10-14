@@ -1,5 +1,5 @@
 (ns vrs.spec-test
-  "Test the spec model of VRS objects."
+  "Test the spec and digest code for VRS objects."
   (:require [clojure.test    :refer [deftest is testing]]
             [clj-http.client :as http]
             [clj-yaml.core   :as yaml]
@@ -70,5 +70,3 @@
 (deftest functions
   (testing "examples in functions.yaml"
     (run! function-valid? (ednify "functions"))))
-
-(clojure.test/test-all-vars *ns*)

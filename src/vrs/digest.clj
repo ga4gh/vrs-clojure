@@ -1,5 +1,5 @@
 (ns vrs.digest
-  "Digest a VRS according to this specification.
+  "Digest a VRS according to its specification.
   https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html"
   (:require [clojure.data.json :as json]
             [clojure.walk      :as walk]
@@ -32,6 +32,13 @@
             (> cpL cpR)                  1
             :else (recur (rest seqL) (rest seqR))))))
 
+(defn ^:private canonicalize
+  "Return a canonical JSON string for the map M."
+  [m]
+  (if (map? m)
+    (-> codepoints sorted-map-by (into m) jsonify)
+    m))
+
 (defn ^:private sha512t24u
   "Base64-encode the truncated SHA-512 digest of string S."
   [s]
@@ -40,17 +47,20 @@
       (Arrays/copyOf 24)
       (->> (.encodeToString (Base64/getUrlEncoder)))))
 
-(declare ga4gh_digest)                  ; for parenthetical Python
+(declare ga4gh_digest)                  ; for the parenthetical Python below
+
+;; This implementation mirrors the vrs-python code so we can use the
+;; validation suite implemented there.
 
 (defn ^:private dictify
   "Frob VRO like vrs-python's DICTIFY, and digest VRO when ENREF?."
   [enref? vro]
   (letfn [(digestible? [vro] (and enref? (-> vro :type spec/digestible?)))
-          (all-curies? [vro] (and (sequential? vro) (every? spec/curie? vro)))
-          (each [m [k v]] (if (-> k name first (= \_)) m
-                              (assoc m k (dictify true v))))
+          (strings?    [vro] (and (sequential? vro) (every? string? vro)))
+          (each        [m [k v]] (if (-> k name first (= \_)) m
+                                     (assoc m k (dictify true v))))
           (uncurieify  [vro] (-> vro spec/curie? second (or vro)))]
-    (cond (all-curies? vro)  (->> vro
+    (cond (strings?    vro)  (->> vro
                                   (map uncurieify)
                                   (sort-by identity codepoints)
                                   (into []))
@@ -61,13 +71,6 @@
           (sequential? vro)  (into [] (map (partial dictify true) vro))
           (string?     vro)  (uncurieify vro)
           :else              (throw (ex-info "Cannot serialize" {:vro vro})))))
-
-(defn ^:private canonicalize
-  "Return a canonical JSON string for the map M."
-  [m]
-  (if (map? m)
-    (-> codepoints sorted-map-by (into m) jsonify)
-    m))
 
 (defn ga4gh_serialize
   "Implement vrs-python's GA4GH_SERIALIZE for VRO."
@@ -80,7 +83,7 @@
   (-> vro ga4gh_serialize sha512t24u))
 
 (defn ga4gh_identify
-  "Implement vrs-python's GA4GH_DIGEST for VRO."
+  "Implement vrs-python's GA4GH_IDENTIFY for VRO."
   [{:keys [type] :as vro}]
   (let [digest (-> vro ga4gh_digest)]
     (if-let [prefix (spec/digestible type)]
