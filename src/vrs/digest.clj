@@ -43,23 +43,23 @@
 (declare ga4gh_digest)                  ; for parenthetical Python
 
 (defn ^:private dictify
-  "Frob IT like vrs-python's dictify(:sigh:), and DIGEST? when true."
-  [digest? it]
-  (letfn [(each [m [k v]] (if (-> k name first (= \_)) m
+  "Frob VRO like vrs-python's DICTIFY, and digest VRO when ENREF?."
+  [enref? vro]
+  (letfn [(digestible? [vro] (and enref? (-> vro :type spec/digestible?)))
+          (each [m [k v]] (if (-> k name first (= \_)) m
                               (assoc m k (dictify true v))))
-          (digestible? [it] (and digest? (-> it :type spec/digestible?)))
-          (uncurieify  [it] (-> it spec/curie? second (or it)))]
-    (cond (boolean?    it)  it
-          (digestible? it)  (ga4gh_digest it)
-          (map?        it)  (reduce each {} it)
-          (number?     it)  it
-          (sequential? it)  (into [] (if (every? spec/curie? it)
-                                       (->> it
-                                            (map uncurieify)
-                                            (sort-by identity codepoints))
-                                       (map (partial dictify true) it)))
-          (string?     it)  (uncurieify it)
-          :else             (throw (ex-info "Cannot serialize" {:it it})))))
+          (uncurieify  [vro] (-> vro spec/curie? second (or vro)))]
+    (cond (boolean?    vro)  vro
+          (digestible? vro)  (ga4gh_digest vro)
+          (map?        vro)  (reduce each {} vro)
+          (number?     vro)  vro
+          (sequential? vro)  (into [] (if (every? spec/curie? vro)
+                                        (->> vro
+                                             (map uncurieify)
+                                             (sort-by identity codepoints))
+                                        (map (partial dictify true) vro)))
+          (string?     vro)  (uncurieify vro)
+          :else              (throw (ex-info "Cannot serialize" {:vro vro})))))
 
 (defn ^:private canonicalize
   "Return a canonical JSON string for the map M."
@@ -69,9 +69,11 @@
     m))
 
 (defn ga4gh_serialize
-  [vrs]
-  (->> vrs (dictify false) canonicalize))
+  "Implement vrs-python's GA4GH_SERIALIZE for VRO."
+  [vro]
+  (->> vro (dictify false) canonicalize))
 
 (defn ga4gh_digest
-  [vrs]
-  (-> vrs ga4gh_serialize sha512t24u))
+  "Implement vrs-python's GA4GH_DIGEST for VRO."
+  [vro]
+  (-> vro ga4gh_serialize sha512t24u))
