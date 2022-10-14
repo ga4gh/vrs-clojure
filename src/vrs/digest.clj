@@ -40,25 +40,38 @@
       (Arrays/copyOf 24)
       (->> (.encodeToString (Base64/getUrlEncoder)))))
 
-(defn ^:private digest
-  "Return IT or ITs digest when ITs TYPE is digestible."
-  [{:keys [type] :as it}]
-  (if (spec/digestible? type)
-    (-> it spec/trace jsonify sha512t24u)
-    it))
+(declare ga4gh_digest)                  ; for parenthetical Python
 
 (defn ^:private dictify
-  "Adjust IT according to vrs-python's dictify(:sigh:)."
-  [it]
+  "Frob IT like vrs-python's dictify(:sigh:), and DIGEST? when true."
+  [digest? it]
   (letfn [(each [m [k v]] (if (-> k name first (= \_)) m
-                              (assoc m k (dictify v))))]
-    (cond (map?        it) (reduce each {} it)
-          (sequential? it) (into [] (if (every? spec/curie? it)
-                                      (sort it)
-                                      (map dictify it)))
-          (string?     it) (-> it spec/curie? second (or it))
-          :else        it)))
+                              (assoc m k (dictify true v))))
+          (digestible? [it] (and digest? (-> it :type spec/digestible?)))
+          (uncurieify  [it] (-> it spec/curie? second (or it)))]
+    (cond (boolean?    it)  it
+          (digestible? it)  (ga4gh_digest it)
+          (map?        it)  (reduce each {} it)
+          (number?     it)  it
+          (sequential? it)  (into [] (if (every? spec/curie? it)
+                                       (->> it
+                                            (map uncurieify)
+                                            (sort-by identity codepoints))
+                                       (map (partial dictify true) it)))
+          (string?     it)  (uncurieify it)
+          :else             (throw (ex-info "Cannot serialize" {:it it})))))
+
+(defn ^:private canonicalize
+  "Return a canonical JSON string for the map M."
+  [m]
+  (if (map? m)
+    (-> codepoints sorted-map-by (into m) jsonify)
+    m))
 
 (defn ga4gh_serialize
   [vrs]
-  (->> vrs (walk/postwalk dictify) jsonify))
+  (->> vrs (dictify false) canonicalize))
+
+(defn ga4gh_digest
+  [vrs]
+  (-> vrs ga4gh_serialize sha512t24u))
