@@ -2,7 +2,6 @@
   "Digest a VRS according to its specification.
   https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html"
   (:require [clojure.data.json :as json]
-            [clojure.walk      :as walk]
             [vrs.spec          :as spec])
   (:import [clojure.lang Keyword]
            [java.security MessageDigest]
@@ -53,28 +52,29 @@
 
 (defn ^:private dictify
   "Frob VRO like vrs-python's DICTIFY, and digest VRO when ENREF?."
-  [enref? vro]
-  (letfn [(digestible? [vro] (and enref? (-> vro :type spec/digestible?)))
-          (strings?    [vro] (and (sequential? vro) (every? string? vro)))
-          (each        [m [k v]] (if (-> k name first (= \_)) m
-                                     (assoc m k (dictify true v))))
-          (uncurieify  [vro] (-> vro spec/curie? second (or vro)))]
-    (cond (strings?    vro)  (->> vro
-                                  (map uncurieify)
-                                  (sort-by identity codepoints)
-                                  (into []))
-          (boolean?    vro)  vro
-          (digestible? vro)  (ga4gh_digest vro)
-          (map?        vro)  (reduce each {} vro)
-          (number?     vro)  vro
-          (sequential? vro)  (into [] (map (partial dictify true) vro))
-          (string?     vro)  (uncurieify vro)
-          :else              (throw (ex-info "Cannot serialize" {:vro vro})))))
+  ([enref? vro]
+   (letfn [(digestible? [vro] (and enref? (-> vro :type spec/digestible?)))
+           (strings?    [vro] (and (sequential? vro) (every? string? vro)))
+           (each        [m [k v]] (if (-> k name first (= \_)) m
+                                      (assoc m k (dictify :enref! v))))]
+     (cond (strings?    vro)  (->> vro
+                                   (map dictify)
+                                   (sort-by identity codepoints)
+                                   (into []))
+           (boolean?    vro)  vro
+           (digestible? vro)  (ga4gh_digest vro)
+           (map?        vro)  (reduce each {} vro)
+           (number?     vro)  vro
+           (sequential? vro)  (into [] (map (partial dictify :enref!) vro))
+           (string?     vro)  (-> vro spec/curie? second (or vro))
+           :else              (throw (ex-info "Cannot serialize" {:vro vro})))))
+  ([vro]
+   (dictify false vro)))
 
 (defn ga4gh_serialize
   "Implement vrs-python's GA4GH_SERIALIZE for VRO."
   [vro]
-  (->> vro (dictify false) canonicalize))
+  (->> vro dictify canonicalize))
 
 (defn ga4gh_digest
   "Implement vrs-python's GA4GH_DIGEST for VRO."
