@@ -1,84 +1,90 @@
 (ns vrs.digest
-  "Create computable digest for an entity, per the VRS spec:
-  
+  "Digest a VRS according to its specification.
   https://vrs.ga4gh.org/en/stable/impl-guide/computed_identifiers.html"
-  (:require [clojure.walk :as walk]
-            [clojure.edn :as edn]
-            [clojure.java.io :as io])
-  (:import [java.security MessageDigest]
-           [java.util Base64 Arrays]))
+  (:require [clojure.data.json :as json]
+            [vrs.spec          :as spec])
+  (:import [clojure.lang Keyword]
+           [java.security MessageDigest]
+           [java.util Arrays Base64]))
 
-(def identifiable-objects
-  #{"Allele"
-    "Haplotype"
-    "CopyNumber"
-    "Text"
-    "VariationSet"
-    "ChromosomeLocation"
-    "SequenceLocation"
-    "SequenceInterval"})
+(defn ^:private jsonify
+  "Return a string containing the JSON projection of EDN."
+  [edn]
+  (json/write-str edn :escape-slash false))
 
-(def type-prefixes
-  {"Sequence" "SQ"
-   "Allele" "VA"
-   "Haplotype" "VH"
-   "Abundance" "VAB"
-   "VariationSet" "VS"
-   "SequenceLocation" "VSL"
-   "ChromosomeLocation" "VCL"
-   "Text" "VT"})
+(defn ^:private keyword->codepoint-seq
+  "Return a codepoint (integer) iterator on the name of KW."
+  [^Keyword kw]
+  (-> kw name .codePoints .iterator iterator-seq))
 
-(def the-allele
-  {:_id "TODO:replacewithvrsid"
-   :members
-   [{:_id "TODO:replacewithvrsid"
-     :location
-     {:_id "TODO:replacewithvrsid"
-      :interval
-      {:end {:type "Number", :value 44908822},
-       :start {:type "Number", :value 44908821},
-       :type "SequenceInterval"},
-      :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-      :type "SequenceLocation"},
-     :state {:sequence "C", :type "LiteralSequenceExpression"},
-     :type "Allele"}
-    {:_id "TODO:replacewithvrsid"
-     :location
-     {:_id "TODO:replacewithvrsid"
-      :interval
-      {:end {:type "Number", :value 44908684},
-       :start {:type "Number", :value 44908683},
-       :type "SequenceInterval"},
-      :sequence_id "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-      :type "SequenceLocation"},
-     :state {:sequence "C", :type "LiteralSequenceExpression"},
-     :type "Allele"}],
-   :type "Haplotype"})
+(defn ^:private codepoints
+  "Compare keys LEFT and RIGHT codepoint by codepoint in UTF-8."
+  [left right]
+  (loop [seqL (keyword->codepoint-seq left)
+         seqR (keyword->codepoint-seq right)]
+    (let [cpL (first seqL) cpR (first seqR)]
+      (cond (and (nil? cpL) (nil? cpR))  0
+            (nil? cpL)                  -1
+            (nil? cpR)                   1
+            (< cpL cpR)                 -1
+            (> cpL cpR)                  1
+            :else (recur (rest seqL) (rest seqR))))))
 
-(def model-objects
-  (-> (io/resource "models.edn") slurp edn/read-string))
+(defn ^:private canonicalize
+  "Return a canonical JSON string for the map M."
+  [m]
+  (if (map? m)
+    (-> codepoints sorted-map-by (into m) jsonify)
+    m))
 
-(defn- serialize-object [o]
-  (reduce (fn [s v] (str s v)) o))
+(defn ^:private sha512t24u
+  "Base64-encode the truncated SHA-512 digest of string S."
+  [s]
+  (-> (MessageDigest/getInstance "SHA-512")
+      (.digest (.getBytes s))
+      (Arrays/copyOf 24)
+      (->> (.encodeToString (Base64/getUrlEncoder)))))
 
-(defn- str->digest [s]
-  (.encodeToString (Base64/getEncoder)
-                   (-> (MessageDigest/getInstance "SHA-512")
-                       (.digest (.getBytes s))
-                       (Arrays/copyOf 24))))
+(declare ga4gh_digest)                  ; for the parenthetical Python below
 
-(defn- object->vrs-id [o]
-  (str
-   "ga4gh:"
-   (get type-prefixes (get o "type"))
-   "."
-   (->> (dissoc o "_id")
-        seq
-        (sort-by key)
-        serialize-object
-        str->digest)))
+;; This implementation mirrors the vrs-python code so we can use the
+;; validation suite implemented there.
 
-(->> the-allele
-     walk/stringify-keys
-     object->vrs-id)
+(defn ^:private dictify
+  "Frob VRO like vrs-python's DICTIFY, and digest VRO when ENREF?."
+  ([enref? vro]
+   (letfn [(digestible? [vro] (and enref? (-> vro :type spec/digestible?)))
+           (strings?    [vro] (and (sequential? vro) (every? string? vro)))
+           (each        [m [k v]] (if (-> k name first (= \_)) m
+                                      (assoc m k (dictify :enref! v))))]
+     (cond (strings?    vro)  (->> vro
+                                   (map dictify)
+                                   (sort-by identity codepoints)
+                                   (into []))
+           (boolean?    vro)  vro
+           (digestible? vro)  (ga4gh_digest vro)
+           (map?        vro)  (reduce each {} vro)
+           (number?     vro)  vro
+           (sequential? vro)  (into [] (map (partial dictify :enref!) vro))
+           (string?     vro)  (-> vro spec/curie? second (or vro))
+           :else              (throw (ex-info "Cannot serialize" {:vro vro})))))
+  ([vro]
+   (dictify false vro)))
 
+(defn ga4gh_serialize
+  "Implement vrs-python's GA4GH_SERIALIZE for VRO."
+  [vro]
+  (->> vro dictify canonicalize))
+
+(defn ga4gh_digest
+  "Implement vrs-python's GA4GH_DIGEST for VRO."
+  [vro]
+  (-> vro ga4gh_serialize sha512t24u))
+
+(defn ga4gh_identify
+  "Implement vrs-python's GA4GH_IDENTIFY for VRO."
+  [{:keys [type] :as vro}]
+  (let [digest (-> vro ga4gh_digest)]
+    (if-let [prefix (spec/digestible type)]
+      (str "ga4gh" prefix \. digest)
+      digest)))
