@@ -145,7 +145,11 @@
        (catch Throwable _)))
 
 (defn curie?
-  "Nil or [TYPE DIGEST] from OBJECT when it is a VRS CURIE string."
+  "Nil or [TYPE DIGEST] from OBJECT when it is a VRS CURIE string.
+
+   (spec/curie? \"ga4gh:VT.01234567890123456789012345678901\")
+
+   [\"VT\" \"01234567890123456789012345678901\"]"
   [object]
   (try (let [[curie? _ga4gh type digest] (re-matches curie-regex object)]
          (when curie? [type digest]))

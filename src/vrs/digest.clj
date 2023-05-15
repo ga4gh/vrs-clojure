@@ -17,7 +17,7 @@
   [^Keyword kw]
   (-> kw name .codePoints .iterator iterator-seq))
 
-(defn ^:private codepoints
+(defn ^:private compare-codepoints
   "Compare keys LEFT and RIGHT codepoint by codepoint in UTF-8."
   [left right]
   (loop [seqL (keyword->codepoint-seq left)
@@ -30,12 +30,21 @@
             (> cpL cpR)                  1
             :else (recur (rest seqL) (rest seqR))))))
 
-(defn ^:private canonicalize
-  "Return a canonical JSON string for the map M."
+(defn ^:private -canonicalize-recur
+  "Recursive edn sorted canonicalization of map M.
+   Sorts string keys of all maps based on UTF-8 char values."
   [m]
   (if (map? m)
-    (-> codepoints sorted-map-by (into m) jsonify)
+    (->> (zipmap (map key m)
+                 (map #(-canonicalize-recur (val %)) m))
+         (into (sorted-map-by compare-codepoints)))
     m))
+
+(defn canonicalize
+  "Return a canonical JSON string for the map M.
+   M must be a map. Does not handle top level arrays."
+  [m]
+  (-> m -canonicalize-recur jsonify))
 
 (defn ^:private sha512t24u
   "Base64-encode the truncated SHA-512 digest of string S."
@@ -59,7 +68,7 @@
                                       (assoc m k (dictify :enref! v))))]
      (cond (strings?    vro)  (->> vro
                                    (map dictify)
-                                   (sort-by identity codepoints)
+                                   (sort-by identity compare-codepoints)
                                    (into []))
            (boolean?    vro)  vro
            (digestible? vro)  (ga4gh_digest vro)
